@@ -162,7 +162,11 @@ prior builds. The structure below exists specifically to prevent that here.
 ## Parking Lot
 *(enhancement ideas noticed mid-build, not yet approved — proposed at next STOP gate)*
 
--
+- Edit/delete a logged meal (currently no way to remove a mistaken scan/log from the Log screen).
+- OFF `/api/v2/search` endpoint for packaged products not yet in the local `foods` cache
+  (Phase 4 task 4 listed this as optional; local-catalog search was built, OFF search was not).
+- "Recently scanned" quick-add list so re-logging a frequently-eaten packaged product
+  doesn't require re-scanning the barcode every time.
 
 ## Known environment constraint (dev sandbox only, not the deployed app)
 
@@ -300,3 +304,38 @@ don't add a URL prefix — confirmed true in practice. The auth boundary is ther
   complete pending the user's visual confirmation on their phone (same
   sandbox network-block as Phase 2 applies). Next: Phase 4 (nutrition &
   food logging) — pending user go-ahead.
+- `2026-08-06` — Phase 4 complete. `supabase/migrations/0003_food_logging.sql`
+  adds `plan_meals` (weekday × meal_type → recipe food) plus the authenticated
+  INSERT/UPDATE policies on `foods` that Phase 1 left as a TODO;
+  `supabase/seed_plan_meals.sql` fills all 35 slots, matched to existing
+  recipe rows by name. `lib/off.ts` is the Open Food Facts v2 client
+  (`GET /product/{barcode}.json`, descriptive User-Agent); gluten status
+  derives from `labels_tags`/`allergens_tags` and defaults to `unknown`,
+  never "safe". `react-qr-barcode-scanner` chosen over the CLAUDE.md
+  candidates after `html5-qrcode` proved stale (last publish 2023, checked
+  via `npm view` since context7 is sandbox-blocked). `components/gf-badge.tsx`
+  is the three-state badge used everywhere a food shows; `gf-disclaimer.tsx`
+  is the standing cross-contamination notice. `app/(dashboard)/log/actions.ts`
+  centralizes lookup/search/manual-create/log-plan-meal/log-custom-meal, all
+  funneling through `finishMealLogging()` which increments
+  `daily_activity.meals_logged_count` and calls `recomputeFastingHonored()`
+  (closing the loop Phase 3 left open). `components/log-screen.tsx` is the
+  Log tab: today's plan with one-tap logging, a "Logged today" section for
+  anything scanned/manually added (added after the user reported scanned
+  items had no visible confirmation — fixed same session), and a meal
+  builder (scan/search/manual add → cart with adjustable quantity_g per item
+  → running subtotal → save). STOP gate verified on the live app by the
+  user on their phone: barcode scan → correct macros + GF badge, mixed
+  scanned/manual multi-item meal saved with correct running total, unknown
+  barcode fell back to manual entry without crashing, dashboard reflected
+  the logged meals. **Incident during this session:** a `deploy_to_vercel`
+  redeploy briefly took production down — the new deployment didn't have
+  `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` available
+  at runtime even though the same project had deployed fine before. No env-var
+  management tool was available in this session's Vercel MCP surface to
+  diagnose or fix it directly — the user re-added both vars in the Vercel
+  dashboard (Production scope) and a follow-up deploy picked them up
+  immediately. Flagging for future sessions: confirm Production env vars are
+  still present after any `deploy_to_vercel` call that returns a healthy
+  build but before declaring the STOP gate passed — `/api/health` is the
+  fast check. Next: Phase 5 (workout module) — approved, in progress.
