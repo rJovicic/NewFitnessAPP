@@ -167,6 +167,16 @@ prior builds. The structure below exists specifically to prevent that here.
   (Phase 4 task 4 listed this as optional; local-catalog search was built, OFF search was not).
 - "Recently scanned" quick-add list so re-logging a frequently-eaten packaged product
   doesn't require re-scanning the barcode every time.
+- Visual refresh toward the original reference screenshots (`docs/design-references/
+  ref-1..4.jpeg` — user re-sent the same 4 images mid-Phase-5 asking about a "full
+  makeover"; confirmed identical files, so no new direction, just a reminder these were
+  the brief). Current app already matches their structure (ring + 2-col stat grid + day
+  strip + bottom nav); the gap is saturation and a couple of surface details. User chose
+  to fold this into the existing Phase 10 polish pass rather than interrupt phase
+  progression. Concretely, for that pass: (1) tinted pastel card *backgrounds* per metric
+  instead of neutral cards with just a colored icon/ring accent, (2) consider a floating
+  rounded-pill bottom nav instead of the current flat bordered bar, (3) food-item photo
+  thumbnails are a bigger lift (needs an image source) — lowest priority of the three.
 
 ## Known environment constraint (dev sandbox only, not the deployed app)
 
