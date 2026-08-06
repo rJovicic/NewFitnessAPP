@@ -180,6 +180,68 @@ export async function getTodaysPlanMeals(): Promise<PlanMealEntry[]> {
     }));
 }
 
+export interface LoggedCustomMealItem {
+  name: string;
+  quantityG: number;
+  kcal: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  glutenStatus: GlutenStatus | null;
+}
+
+export interface LoggedCustomMeal {
+  id: string;
+  mealType: string;
+  items: LoggedCustomMealItem[];
+}
+
+interface LoggedMealItemRow {
+  quantity_g: number;
+  kcal: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  custom_name: string | null;
+  foods: { name: string; gluten_status: GlutenStatus } | null;
+}
+
+export async function getTodaysCustomMeals(): Promise<LoggedCustomMeal[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const dateStr = todayInAppTimezone();
+  const { start, end } = zonedDayRangeUtc(dateStr);
+
+  const { data } = await supabase
+    .from("meal_logs")
+    .select(
+      "id, meal_type, logged_at, meal_items(quantity_g, kcal, protein_g, carbs_g, fat_g, custom_name, foods(name, gluten_status))"
+    )
+    .eq("profile_id", user.id)
+    .eq("source", "custom")
+    .gte("logged_at", start.toISOString())
+    .lt("logged_at", end.toISOString())
+    .order("logged_at", { ascending: false });
+
+  return (data ?? []).map((log) => ({
+    id: log.id,
+    mealType: log.meal_type,
+    items: ((log.meal_items as unknown as LoggedMealItemRow[]) ?? []).map((item) => ({
+      name: item.foods?.name ?? item.custom_name ?? "Item",
+      quantityG: Number(item.quantity_g),
+      kcal: Number(item.kcal),
+      proteinG: Number(item.protein_g),
+      carbsG: Number(item.carbs_g),
+      fatG: Number(item.fat_g),
+      glutenStatus: item.foods?.gluten_status ?? null,
+    })),
+  }));
+}
+
 async function finishMealLogging(
   supabase: Awaited<ReturnType<typeof createClient>>,
   profileId: string

@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { GfBadge, type GlutenStatus } from "@/components/gf-badge";
 import { GfDisclaimer } from "@/components/gf-disclaimer";
 import { BarcodeScannerModal } from "@/components/barcode-scanner";
-import { MEAL_SLOTS } from "@/lib/meal-slots";
+import { MEAL_SLOTS, mealSlotLabel } from "@/lib/meal-slots";
 import {
   logPlanMeal,
   logMeal,
@@ -17,6 +17,7 @@ import {
   type PlanMealEntry,
   type FoodResult,
   type MealItemInput,
+  type LoggedCustomMeal,
 } from "@/app/(dashboard)/log/actions";
 
 interface CartItem extends MealItemInput {
@@ -35,7 +36,13 @@ function macrosForQuantity(item: MealItemInput) {
   };
 }
 
-export function LogScreen({ planMeals }: { planMeals: PlanMealEntry[] }) {
+export function LogScreen({
+  planMeals,
+  loggedMeals,
+}: {
+  planMeals: PlanMealEntry[];
+  loggedMeals: LoggedCustomMeal[];
+}) {
   const [isPending, startTransition] = useTransition();
   const [loggingPlanId, setLoggingPlanId] = useState<string | null>(null);
 
@@ -171,6 +178,49 @@ export function LogScreen({ planMeals }: { planMeals: PlanMealEntry[] }) {
         ))}
         <GfDisclaimer />
       </section>
+
+      {loggedMeals.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="font-display text-lg font-semibold">Logged today</h2>
+          {loggedMeals.map((entry) => {
+            const total = entry.items.reduce(
+              (acc, item) => ({
+                kcal: acc.kcal + item.kcal,
+                protein: acc.protein + item.proteinG,
+                carbs: acc.carbs + item.carbsG,
+                fat: acc.fat + item.fatG,
+              }),
+              { kcal: 0, protein: 0, carbs: 0, fat: 0 }
+            );
+            return (
+              <Card key={entry.id}>
+                <CardContent className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-muted-foreground">
+                      {mealSlotLabel(entry.mealType)}
+                    </p>
+                    <span className="tabular-data text-xs text-muted-foreground">
+                      {Math.round(total.kcal)} kcal · P{Math.round(total.protein)} C
+                      {Math.round(total.carbs)} F{Math.round(total.fat)}
+                    </span>
+                  </div>
+                  {entry.items.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{item.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {item.quantityG}g
+                        </span>
+                      </div>
+                      {item.glutenStatus && <GfBadge status={item.glutenStatus} />}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </section>
+      )}
 
       {!builderOpen ? (
         <Button variant="outline" onClick={() => setBuilderOpen(true)}>
