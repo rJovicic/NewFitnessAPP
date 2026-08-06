@@ -70,6 +70,12 @@ export function zonedTimeToUtc(dateStr: string, timeStr: string): Date {
   return new Date(guessUtc.getTime() - offsetMinutes * 60_000);
 }
 
+/** Monday-first weekday index (0-6) for a YYYY-MM-DD date string. */
+export function weekdayIndex(dateStr: string): number {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  return (d.getUTCDay() + 6) % 7;
+}
+
 /** The 7 dates (Monday-first, YYYY-MM-DD) of the week containing `referenceDateStr`. */
 export function getWeekDates(referenceDateStr: string): string[] {
   const ref = new Date(`${referenceDateStr}T00:00:00Z`);

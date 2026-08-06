@@ -58,13 +58,15 @@ export function FastingTile({
 
   const { start, end } = boundariesForToday(windowStart, windowEnd, now);
   const isEating = now >= start && now < end;
+  const msUntilClose = end.getTime() - now.getTime();
+  const isClosingSoon = isEating && msUntilClose <= 30 * 60_000;
 
   let statusLabel: string;
   let remainingLabel: string;
 
   if (isEating) {
-    statusLabel = "Eating window open";
-    remainingLabel = `${formatDuration(end.getTime() - now.getTime())} left`;
+    statusLabel = isClosingSoon ? "Window closing soon" : "Eating window open";
+    remainingLabel = `${formatDuration(msUntilClose)} left`;
   } else if (now < start) {
     statusLabel = "Fasting";
     remainingLabel = `${formatDuration(start.getTime() - now.getTime())} until window opens`;
@@ -76,14 +78,23 @@ export function FastingTile({
   }
 
   return (
-    <Card>
+    <Card className={isClosingSoon ? "border-carbs/50 bg-carbs/5" : undefined}>
       <CardContent className="flex items-center gap-2.5">
         <Timer
-          className={cn("size-4 shrink-0", isEating ? "text-foreground" : "text-muted-foreground")}
+          className={cn(
+            "size-4 shrink-0",
+            isClosingSoon
+              ? "text-carbs"
+              : isEating
+                ? "text-foreground"
+                : "text-muted-foreground"
+          )}
           strokeWidth={2}
         />
         <div>
-          <p className="text-sm font-medium">{statusLabel}</p>
+          <p className={cn("text-sm font-medium", isClosingSoon && "text-carbs")}>
+            {statusLabel}
+          </p>
           <p className="text-xs text-muted-foreground">{remainingLabel}</p>
         </div>
       </CardContent>
