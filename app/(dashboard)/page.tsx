@@ -3,6 +3,8 @@ import { dashboardTiles } from "@/lib/tile-registry";
 import { todayInAppTimezone } from "@/lib/timezone";
 import { DayStrip } from "@/components/day-strip";
 import { CalorieRing } from "@/components/calorie-ring";
+import { DailyChecklist } from "@/components/daily-checklist";
+import { getDailyChecklist } from "./checklist-actions";
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -14,8 +16,12 @@ export default async function DashboardHome({
   const { date } = await searchParams;
   const todayDate = todayInAppTimezone();
   const selectedDate = date && DATE_PATTERN.test(date) ? date : todayDate;
+  const isToday = selectedDate === todayDate;
 
-  const data = await getDashboardData(selectedDate);
+  const [data, checklist] = await Promise.all([
+    getDashboardData(selectedDate),
+    isToday ? getDailyChecklist() : Promise.resolve(null),
+  ]);
 
   if (!data) {
     return (
@@ -44,6 +50,13 @@ export default async function DashboardHome({
           </div>
         ))}
       </div>
+
+      {isToday && checklist && (
+        <div className="flex flex-col gap-3 px-4">
+          <h2 className="font-display text-lg font-semibold">Today&apos;s checklist</h2>
+          <DailyChecklist data={checklist} />
+        </div>
+      )}
     </div>
   );
 }

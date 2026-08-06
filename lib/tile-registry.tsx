@@ -16,7 +16,7 @@ export interface DashboardTile {
 export const dashboardTiles: DashboardTile[] = [
   { id: "macros", span: "full", render: (data) => <MacrosTile data={data} /> },
   { id: "water", span: "half", render: (data) => <WaterTile data={data} /> },
-  { id: "streak", span: "half", render: () => <StreakTile /> },
+  { id: "streak", span: "half", render: (data) => <StreakTile streak={data.streak} /> },
   {
     id: "fasting",
     span: "full",

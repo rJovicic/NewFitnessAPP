@@ -1,6 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { calculateAge, calculateTargets } from "@/lib/macros";
 import { todayInAppTimezone, zonedDayRangeUtc } from "@/lib/timezone";
+import { computeStreak, type DailyActivitySummary } from "@/lib/streak";
+
+// Shared daily targets — not per-profile settings yet, just the PDF's
+// general guidance. Used here and by the Phase 7 daily checklist so the
+// two don't drift apart.
+export const WATER_TARGET_ML = 3000;
+export const STEPS_TARGET = 10000;
+export const SLEEP_TARGET_HOURS = 7;
 
 export interface DashboardData {
   fullName: string;
@@ -20,6 +28,7 @@ export interface DashboardData {
   water: { ml: number; targetMl: number };
   steps: { count: number; targetCount: number };
   fastingWindow: { start: string; end: string };
+  streak: number;
 }
 
 export async function getDashboardData(
@@ -78,6 +87,24 @@ export async function getDashboardData(
     .eq("activity_date", dateStr)
     .maybeSingle();
 
+  // Streak is always relative to the real current day, not whatever date
+  // the day-strip happens to be viewing.
+  const realToday = todayInAppTimezone();
+  const streakSince = new Date();
+  streakSince.setDate(streakSince.getDate() - 60);
+  const { data: streakHistory } = await supabase
+    .from("daily_activity")
+    .select("activity_date, workout_completed, meals_logged_count")
+    .eq("profile_id", user.id)
+    .gte("activity_date", streakSince.toISOString().slice(0, 10))
+    .order("activity_date", { ascending: true });
+
+  const streakSummaries: DailyActivitySummary[] = (streakHistory ?? []).map((r) => ({
+    date: r.activity_date as string,
+    workoutCompleted: r.workout_completed,
+    mealsLoggedCount: r.meals_logged_count,
+  }));
+
   return {
     fullName: profile.full_name ?? "there",
     dateStr,
@@ -93,11 +120,12 @@ export async function getDashboardData(
       carbsG: Math.round(logged.carbsG),
       fatG: Math.round(logged.fatG),
     },
-    water: { ml: activity?.water_ml ?? 0, targetMl: 3000 },
-    steps: { count: activity?.steps ?? 0, targetCount: 10000 },
+    water: { ml: activity?.water_ml ?? 0, targetMl: WATER_TARGET_ML },
+    steps: { count: activity?.steps ?? 0, targetCount: STEPS_TARGET },
     fastingWindow: {
       start: profile.eating_window_start ?? "10:00",
       end: profile.eating_window_end ?? "19:30",
     },
+    streak: computeStreak(streakSummaries, realToday),
   };
 }
