@@ -164,6 +164,25 @@ prior builds. The structure below exists specifically to prevent that here.
 
 -
 
+## Known environment constraint (dev sandbox only, not the deployed app)
+
+The Claude Code sandbox's outbound network policy blocks several domains needed by
+tooling: `ui.shadcn.com` (shadcn CLI), `context7.com` (context7 MCP), and all
+`*.supabase.co`/`*.supabase.com` hosts (direct curl checks). This does **not** affect the
+deployed app — Vercel's build/runtime environment has normal internet access, confirmed
+by a working `/api/health` check against the live Supabase project. Practical
+consequences for future sessions:
+- shadcn/ui components must be hand-written (copy the known source, don't rely on
+  `npx shadcn add`) — done for Button in Phase 0, same pattern going forward.
+- context7 can't be queried directly from the sandbox; fall back to `npm view <pkg>
+  version` for version checks and to trained knowledge for API shapes, and say so.
+- Any "is Supabase/Vercel/npm-package-X reachable" check must go through an actual
+  deployed route (`/api/health`-style) hit via `web_fetch_vercel_url`, not a local `curl`.
+- `deploy_to_vercel` (file-tree deploy, no git needed) is the working deploy path here —
+  git-linking the Vercel project to GitHub for continuous deployment needs an interactive
+  browser OAuth flow this session can't do; ask the user to do that once via the Vercel
+  dashboard if continuous deployment becomes worth the setup.
+
 ---
 
 ## 7. Extensibility / add-on pattern
@@ -215,3 +234,12 @@ before there's anything to plug into it.
 next, anything the user explicitly deferred or declined.)*
 
 - `YYYY-MM-DD` — Project bootstrapped. CLAUDE.md and BUILD-LOOP-PROMPT.md created. No code yet.
+- `2026-08-06` — Phase 0 complete. Next.js 16 (App Router/TS/Tailwind v4) scaffolded,
+  shadcn/ui wired by hand (registry domain blocked in-sandbox, see Known environment
+  constraint above), Supabase project (dvukiptlkmwevwiwnoho) connected via
+  `@supabase/ssr` client/server helpers, `.env.local` set and gitignored. Deployed to
+  Vercel (`new-fitness-app`, team `rjovicics-projects`) via `deploy_to_vercel` —
+  production URL live at new-fitness-app-lake.vercel.app, `/api/health` confirms
+  Supabase reachability (GoTrue 200). `docs/source-plan.pdf` and
+  `docs/design-references/*.jpeg` committed. All 4 STOP gate items verified. Next:
+  Phase 1 (database schema, auth, seed data from the PDF).
