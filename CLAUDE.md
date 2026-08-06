@@ -380,3 +380,34 @@ don't add a URL prefix — confirmed true in practice. The auth boundary is ther
   Phase 10 polish pass rather than interrupt phase progression — see Parking
   Lot for the concrete punch list. Next: Phase 6 (body metrics & adjustment
   engine) — approved, in progress.
+- `2026-08-06` — Phase 6 complete. `supabase/migrations/0004_progress_photos_storage.sql`
+  creates the `progress-photos` private Storage bucket + `{auth.uid()}/*`-scoped
+  RLS policies — a Phase 1 task that was specified but never actually applied;
+  closed that gap here. `app/(dashboard)/progress/actions.ts` covers weight
+  entry (upsert per day, so re-logging today overwrites rather than
+  duplicating), body measurements, photo upload with signed-URL retrieval
+  (bucket is private, so display needs `createSignedUrl`), and weight history
+  with a 7-day rolling average computed server-side.
+  `components/weight-chart.tsx` (recharts, newly added dependency) plots raw
+  points as noise + the rolling average as the signal line, per the PDF's own
+  framing. `lib/adjustment.ts` implements the 4 PDF Ch.13 rules (plateau,
+  fast weight loss, low energy, rising perceived effort) as pure functions —
+  unit-tested via a standalone `tsx` script (11/11 cases passing, including
+  each rule's negative case and a combined-trigger case), same pattern as
+  Phase 1/3's pure-function verification. `applyAdjustment()` only fires on
+  an explicit tap, updates `profiles.deficit_kcal`, and logs the change to
+  `custom_metrics` (Phase 9's designated add-on table) rather than a new
+  dedicated table. Deployed to production, `/api/health` and an
+  unauthenticated `/progress` redirect both confirmed. Live weight-entry →
+  dashboard-target and adjustment-banner-trigger verification (needs 2+
+  weeks of real data) deferred to the user's ongoing real-world use rather
+  than blocked on synthetic phone testing, consistent with how Phase 5 was
+  closed out. **Incident during this session:** user reported a 404
+  `DEPLOYMENT_NOT_FOUND` on their phone from a URL ending `-lac-ten.vercel.app`
+  — not one of this project's actual domains (`new-fitness-app-lake.vercel.app`
+  + two teammate-scoped aliases, confirmed via `get_project`). Resolved by
+  having the user navigate to the correct URL directly rather than a stale
+  bookmark/Home-Screen icon. Flagging for future sessions: if this recurs,
+  double-check the user isn't confusing "lake" (the real alias) with a
+  mistyped or autocompleted variant. Next: Phase 7 (habit system, daily
+  checklist, streaks) — approved, in progress.
