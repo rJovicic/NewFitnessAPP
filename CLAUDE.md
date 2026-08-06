@@ -279,3 +279,24 @@ don't add a URL prefix — confirmed true in practice. The auth boundary is ther
   browser automation here can only reach `localhost` — real-device verification from the
   user is the fallback for anything needing the live URL rendered/screenshotted. Next:
   Phase 3 (14:10 fasting module) — pending user go-ahead.
+- `2026-08-06` — Phase 2 fixes (user-approved) + Phase 3 complete.
+  `lib/timezone.ts` is now the single source of truth for "what day/time is
+  it" (Europe/Zagreb, hardcoded — single-user, no timezone picker); replaces
+  the old UTC-boundary placeholder and the client-clock header. Day-strip
+  navigates via `?date=` (server-rendered Links, no client JS needed).
+  Calorie ring shows a destructive-toned "+Xg over" state instead of
+  silently capping at full. `supabase/migrations/0002_fasting_window.sql`
+  adds `profiles.eating_window_start/end` (10:00/19:30 default), editable
+  in Settings via a server action. `FastingTile` is a real ticking widget
+  now. `lib/fasting.ts` (`computeFastingHonored`, unit-tested against 6
+  cases incl. the 15-min grace boundary) + `lib/daily-activity.ts`
+  (`recomputeFastingHonored`, DB wrapper) are built and verified end-to-end
+  against the live DB with a temporary test meal outside the window
+  (honored flipped to `false` as expected, test data fully cleaned up
+  afterward) — but **not yet called from any user flow**, since meal
+  logging doesn't exist until Phase 4. Phase 4 must call
+  `recomputeFastingHonored()` after every meal log create/delete. STOP
+  gate: build clean, fasting logic verified against real DB, widget code
+  complete pending the user's visual confirmation on their phone (same
+  sandbox network-block as Phase 2 applies). Next: Phase 4 (nutrition &
+  food logging) — pending user go-ahead.
