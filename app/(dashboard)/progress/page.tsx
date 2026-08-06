@@ -1,12 +1,24 @@
-import { LineChart } from "lucide-react";
-import { ComingSoon } from "@/components/coming-soon";
+import { ProgressScreen } from "@/components/progress-screen";
+import { todayInAppTimezone } from "@/lib/timezone";
+import {
+  getWeightHistory,
+  getAdjustmentSuggestions,
+  getRecentProgressPhotos,
+} from "./actions";
 
-export default function ProgressPage() {
+export default async function ProgressPage() {
+  const [weightHistory, suggestions, photos] = await Promise.all([
+    getWeightHistory(),
+    getAdjustmentSuggestions(),
+    getRecentProgressPhotos(),
+  ]);
+
   return (
-    <ComingSoon
-      icon={LineChart}
-      title="Progress"
-      description="Weight trends, measurements, and photos will live here soon."
+    <ProgressScreen
+      weightHistory={weightHistory}
+      suggestions={suggestions}
+      photos={photos}
+      todayDate={todayInAppTimezone()}
     />
   );
 }
