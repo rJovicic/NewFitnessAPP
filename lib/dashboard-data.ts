@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { calculateAge, calculateTargets } from "@/lib/macros";
+import { todayInAppTimezone, zonedDayRangeUtc } from "@/lib/timezone";
 
 export interface DashboardData {
   fullName: string;
+  dateStr: string;
   targets: {
     targetKcal: number;
     proteinG: number;
@@ -17,13 +19,12 @@ export interface DashboardData {
   };
   water: { ml: number; targetMl: number };
   steps: { count: number; targetCount: number };
+  fastingWindow: { start: string; end: string };
 }
 
-// "Today" here uses the server's UTC calendar day — an acceptable
-// placeholder for Phase 2, where this mostly returns zeros anyway (no
-// logging UI exists yet). Phase 3/4 need a real timezone-aware day
-// boundary (tied to the fasting window), noted in CLAUDE.md Parking Lot.
-export async function getDashboardData(): Promise<DashboardData | null> {
+export async function getDashboardData(
+  dateStr: string = todayInAppTimezone()
+): Promise<DashboardData | null> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -33,7 +34,7 @@ export async function getDashboardData(): Promise<DashboardData | null> {
   const { data: profile } = await supabase
     .from("profiles")
     .select(
-      "full_name, date_of_birth, height_cm, starting_weight_kg, activity_factor, protein_g_per_kg, deficit_kcal"
+      "full_name, date_of_birth, height_cm, starting_weight_kg, activity_factor, protein_g_per_kg, deficit_kcal, eating_window_start, eating_window_end"
     )
     .eq("id", user.id)
     .single();
@@ -51,19 +52,16 @@ export async function getDashboardData(): Promise<DashboardData | null> {
   const age = calculateAge(profile.date_of_birth);
   const targets = calculateTargets(profile, weightKg, age);
 
-  const todayStart = new Date();
-  todayStart.setUTCHours(0, 0, 0, 0);
-  const todayEnd = new Date(todayStart);
-  todayEnd.setUTCDate(todayEnd.getUTCDate() + 1);
+  const { start, end } = zonedDayRangeUtc(dateStr);
 
-  const { data: todaysItems } = await supabase
+  const { data: dayItems } = await supabase
     .from("meal_items")
     .select("kcal, protein_g, carbs_g, fat_g, meal_logs!inner(profile_id, logged_at)")
     .eq("meal_logs.profile_id", user.id)
-    .gte("meal_logs.logged_at", todayStart.toISOString())
-    .lt("meal_logs.logged_at", todayEnd.toISOString());
+    .gte("meal_logs.logged_at", start.toISOString())
+    .lt("meal_logs.logged_at", end.toISOString());
 
-  const logged = (todaysItems ?? []).reduce(
+  const logged = (dayItems ?? []).reduce(
     (acc, item) => ({
       kcal: acc.kcal + Number(item.kcal),
       proteinG: acc.proteinG + Number(item.protein_g),
@@ -73,16 +71,16 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     { kcal: 0, proteinG: 0, carbsG: 0, fatG: 0 }
   );
 
-  const todayDate = todayStart.toISOString().slice(0, 10);
   const { data: activity } = await supabase
     .from("daily_activity")
     .select("water_ml, steps")
     .eq("profile_id", user.id)
-    .eq("activity_date", todayDate)
+    .eq("activity_date", dateStr)
     .maybeSingle();
 
   return {
     fullName: profile.full_name ?? "there",
+    dateStr,
     targets: {
       targetKcal: Math.round(targets.targetKcal),
       proteinG: Math.round(targets.proteinG),
@@ -97,5 +95,9 @@ export async function getDashboardData(): Promise<DashboardData | null> {
     },
     water: { ml: activity?.water_ml ?? 0, targetMl: 3000 },
     steps: { count: activity?.steps ?? 0, targetCount: 10000 },
+    fastingWindow: {
+      start: profile.eating_window_start ?? "10:00",
+      end: profile.eating_window_end ?? "19:30",
+    },
   };
 }

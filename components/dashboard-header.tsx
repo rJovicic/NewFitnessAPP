@@ -1,6 +1,4 @@
-"use client";
-
-import { useEffect, useState } from "react";
+import { APP_TIMEZONE, currentHourInAppTimezone } from "@/lib/timezone";
 
 function greetingFor(hour: number) {
   if (hour < 5) return "Good night";
@@ -10,22 +8,14 @@ function greetingFor(hour: number) {
 }
 
 export function DashboardHeader({ firstName }: { firstName: string }) {
-  // Computed client-side so it reflects the user's actual local time
-  // rather than the server's (Vercel region != Robert's timezone).
-  const [now, setNow] = useState<Date | null>(null);
-
-  useEffect(() => {
-    setNow(new Date());
-  }, []);
-
-  const greeting = now ? greetingFor(now.getHours()) : "Hello";
-  const dateLabel = now
-    ? now.toLocaleDateString(undefined, {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-      })
-    : "";
+  const now = new Date();
+  const greeting = greetingFor(currentHourInAppTimezone(now));
+  const dateLabel = now.toLocaleDateString("en-US", {
+    timeZone: APP_TIMEZONE,
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
 
   return (
     <header className="px-4 pt-6 pb-2">

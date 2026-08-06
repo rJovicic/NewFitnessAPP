@@ -17,5 +17,14 @@ export const dashboardTiles: DashboardTile[] = [
   { id: "macros", span: "full", render: (data) => <MacrosTile data={data} /> },
   { id: "water", span: "half", render: (data) => <WaterTile data={data} /> },
   { id: "streak", span: "half", render: () => <StreakTile /> },
-  { id: "fasting", span: "full", render: () => <FastingTile /> },
+  {
+    id: "fasting",
+    span: "full",
+    render: (data) => (
+      <FastingTile
+        windowStart={data.fastingWindow.start}
+        windowEnd={data.fastingWindow.end}
+      />
+    ),
+  },
 ];

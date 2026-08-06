@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 const SIZE = 200;
 const STROKE = 14;
 const RADIUS = (SIZE - STROKE) / 2;
@@ -10,9 +12,10 @@ export function CalorieRing({
   loggedKcal: number;
   targetKcal: number;
 }) {
+  const isOver = targetKcal > 0 && loggedKcal > targetKcal;
   const fraction = targetKcal > 0 ? Math.min(loggedKcal / targetKcal, 1) : 0;
   const offset = CIRCUMFERENCE * (1 - fraction);
-  const remaining = Math.max(targetKcal - loggedKcal, 0);
+  const remaining = Math.abs(targetKcal - loggedKcal);
 
   return (
     <div className="relative mx-auto size-[200px]">
@@ -39,7 +42,10 @@ export function CalorieRing({
           strokeLinecap="round"
           strokeDasharray={CIRCUMFERENCE}
           strokeDashoffset={offset}
-          className="stroke-calories transition-[stroke-dashoffset] duration-500 ease-out"
+          className={cn(
+            "transition-[stroke-dashoffset] duration-500 ease-out",
+            isOver ? "stroke-destructive" : "stroke-calories"
+          )}
         />
         {/* Dial zero-mark, at the 12 o'clock start of the arc */}
         <circle
@@ -57,8 +63,17 @@ export function CalorieRing({
           of {targetKcal.toLocaleString()} kcal
         </span>
         {loggedKcal > 0 && (
-          <span className="text-xs text-muted-foreground">
-            {remaining > 0 ? `${remaining.toLocaleString()} left` : "target reached"}
+          <span
+            className={cn(
+              "text-xs",
+              isOver ? "text-destructive" : "text-muted-foreground"
+            )}
+          >
+            {isOver
+              ? `+${remaining.toLocaleString()} over`
+              : remaining > 0
+                ? `${remaining.toLocaleString()} left`
+                : "target reached"}
           </span>
         )}
       </div>
