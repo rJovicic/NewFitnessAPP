@@ -261,3 +261,21 @@ next, anything the user explicitly deferred or declined.)*
 don't add a URL prefix — confirmed true in practice. The auth boundary is therefore
 "everything except /login", not a `/dashboard/**` path check. `PUBLIC_PATHS` in
 `lib/supabase/middleware.ts` is the actual source of truth for what's public.
+- `2026-08-06` — Phase 2 complete. Design direction via `frontend-design` skill: warm
+  paper/ink neutrals + 6 desaturated semantic per-metric hues (calories/protein/carbs/
+  fat/water/steps), Space Grotesk + IBM Plex Sans/Mono pairing (not Inter/purple-gradient
+  default), calorie ring styled as a precision dial as the signature element.
+  `lib/nav-config.ts` drives the bottom tab bar; `app/(dashboard)/layout.tsx` is the
+  shared shell (header + nav). `lib/dashboard-data.ts` pulls real profile/weight/targets/
+  logged-macros/water/steps from Supabase — zeros pre-logging, not fake data.
+  `lib/tile-registry.tsx` is the array-driven tile grid proving out the Phase 9 add-on
+  pattern early. Placeholder Log/Train/Progress/Settings pages ship; sign-out moved to
+  Settings. STOP gate verified: build clean, all 5 nav routes resolve without errors
+  (automated check), and the user tested the live app on their own phone — calorie ring
+  showed 2,483 kcal target / 194g protein / 270g carbs / 70g fat, matching
+  `calculateTargets()` computed live from the real profile, all logged values correctly
+  zero. Noted for future sessions: this sandbox's network policy blocks `*.vercel.app`
+  entirely (confirmed via curl and a locally-launched Playwright browser alike), so
+  browser automation here can only reach `localhost` — real-device verification from the
+  user is the fallback for anything needing the live URL rendered/screenshotted. Next:
+  Phase 3 (14:10 fasting module) — pending user go-ahead.
