@@ -349,3 +349,34 @@ don't add a URL prefix — confirmed true in practice. The auth boundary is ther
   still present after any `deploy_to_vercel` call that returns a healthy
   build but before declaring the STOP gate passed — `/api/health` is the
   fast check. Next: Phase 5 (workout module) — approved, in progress.
+- `2026-08-06` — Phase 5 complete. `lib/workout.ts` (`currentProgressionBlock`)
+  maps weeks-since-`program_start_date` onto the PDF's 4-block/12-week table,
+  holding at block 4 once exhausted — verified against real seed data
+  (`program_start_date` = today, so block 1: 2 rounds/25s rest, matches the
+  seeded `block_progression` JSON exactly). `app/(dashboard)/train/actions.ts`:
+  `getTodaysWorkout()` resolves today's weekday to a `workout_day` and
+  block-adjusts every exercise's rounds/rest; `logWorkout()` writes
+  `workout_logs` and flips `daily_activity.workout_completed`;
+  `getRecentWorkoutLogs()` backs a small history list (added to satisfy the
+  STOP gate's "appears in a history list" wording, not spelled out in the
+  phase's task list itself). `components/rest-timer.tsx`: countdown with
+  +15s/-15s and skip, vibration + Web Audio beep at zero, no external audio
+  asset needed. `components/train-screen.tsx`: exercise overview → flattens
+  every exercise's rounds into a linear step list → walks through each set
+  with the rest timer in between → perceived-effort capture → save. Deployed
+  to production, `/api/health` confirmed green. **Process note:** the first
+  Phase 5 deploy shipped without `components/train-screen.tsx` — a manual
+  omission assembling the `deploy_to_vercel` file-tree payload, caught
+  immediately from the Vercel build log (`Module not found`) and fixed with
+  a corrected redeploy. User confirmed "Next phase" without flagging any
+  issue. **Design note (no code change):** user re-sent the 4 original
+  Phase 0 reference screenshots mid-phase asking about a "full UI makeover" —
+  confirmed identical files to `docs/design-references/ref-1..4.jpeg`, so no
+  new direction. Current app already matches their structure (ring + 2-col
+  stat grid + day strip + bottom nav); gap is mainly saturation (their cards
+  use tinted pastel backgrounds per metric, ours uses neutral cards + a
+  colored accent only) plus a rounded-pill nav shape and food-photo
+  thumbnails in some references. User chose to fold this into the existing
+  Phase 10 polish pass rather than interrupt phase progression — see Parking
+  Lot for the concrete punch list. Next: Phase 6 (body metrics & adjustment
+  engine) — approved, in progress.
