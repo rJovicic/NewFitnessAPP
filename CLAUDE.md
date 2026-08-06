@@ -243,3 +243,21 @@ next, anything the user explicitly deferred or declined.)*
   Supabase reachability (GoTrue 200). `docs/source-plan.pdf` and
   `docs/design-references/*.jpeg` committed. All 4 STOP gate items verified. Next:
   Phase 1 (database schema, auth, seed data from the PDF).
+- `2026-08-06` — Phase 1 complete. Schema applied via `supabase/migrations/0001_init.sql`
+  (13 tables, RLS on every table — 0 security-advisor lint findings). Seed data applied
+  from `supabase/seed.sql`: 7 workout_days, 34 exercises, 42 workout_day_exercises,
+  8 supplements, 35 recipe foods — all counts verified against the PDF via direct SQL
+  count query. `lib/macros.ts` (calculateTargets/calculateAge) unit-tested against the
+  PDF's own day-1 worked example — matches within its rounding, and doubly confirmed
+  against the real user (DOB 1998-03-29, age 28 as of today, coincidentally identical to
+  the PDF's placeholder age). Auth: `app/login`, `proxy.ts` + `lib/supabase/middleware.ts`
+  (whole app behind auth except /login and /api/health — no public marketing pages, see
+  §5 note below), `app/(dashboard)/page.tsx` as protected root. One real auth account
+  created (robert.jovicic98@gmail.com) and `profiles` row seeded (183cm/88kg→76.5kg).
+  User confirmed live login works at new-fitness-app-lake.vercel.app. All 4 STOP gate
+  items verified. Next: Phase 2 (dashboard shell & navigation) — pending user go-ahead.
+
+**Correction to §5:** the folder structure note said `app/(dashboard)/...` route groups
+don't add a URL prefix — confirmed true in practice. The auth boundary is therefore
+"everything except /login", not a `/dashboard/**` path check. `PUBLIC_PATHS` in
+`lib/supabase/middleware.ts` is the actual source of truth for what's public.
