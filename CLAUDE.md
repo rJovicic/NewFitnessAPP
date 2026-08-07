@@ -411,3 +411,45 @@ don't add a URL prefix — confirmed true in practice. The auth boundary is ther
   double-check the user isn't confusing "lake" (the real alias) with a
   mistyped or autocompleted variant. Next: Phase 7 (habit system, daily
   checklist, streaks) — approved, in progress.
+- `2026-08-07` — Phase 7 complete. `lib/streak.ts` (`computeStreak`) walks
+  backward from today over `daily_activity` rows, qualifying a day as
+  `workout_completed && meals_logged_count >= 3`, never a stored counter —
+  unit-tested 8/8 including the "today incomplete doesn't zero out
+  yesterday's streak" edge case. `app/(dashboard)/checklist-actions.ts`
+  (`addWater`, `logSleepHours`, `toggleSupplement`, `getDailyChecklist`)
+  and `components/daily-checklist.tsx` render a real Workout/Meals/Water/
+  Steps/Sleep checklist plus a supplement-toggle list on the dashboard,
+  wired into `app/(dashboard)/page.tsx` (checklist only shown when viewing
+  today, since its writes always target "today" regardless of which date
+  the day-strip is showing). `StreakTile` now takes a real `streak` prop
+  from `lib/dashboard-data.ts` instead of the Phase 2 placeholder. Steps
+  render as "Not synced yet" until Phase 8's Health bridge exists, rather
+  than faking an input. Deployed to production, `/api/health` and an
+  unauthenticated `/progress` redirect both confirmed.
+  **Incident — deploy mechanics, worth reading before any future
+  `deploy_to_vercel` call:** this session hit a hard output-size ceiling
+  when assembling the full-tree deploy payload directly (single tool calls
+  topped out somewhere in the ~35–60KB range; the full ~172KB/66-file tree
+  failed outright, and even a background sub-agent given the exact same
+  file list failed the same way three times in a row — twice from hitting
+  the same ceiling mid-assembly, once from an account-level session/usage
+  cap). What worked: (1) trim the payload first — drop files nothing
+  imports (`app/favicon.ico`, `components.json`, and the unused
+  `create-next-app` placeholder SVGs in `public/`, confirmed via grep that
+  nothing references them), cutting ~172KB to ~134KB; (2) submit the full
+  trimmed file set in one `deploy_to_vercel` call with the response
+  containing *only* that tool call and no other narration, since any
+  extra text ate into the same per-turn budget. Two earlier attempts that
+  included explanatory text around the tool call only got 1 and then 15
+  of the files in before truncating, which produced real but broken
+  "Error" deployments on Vercel (harmless — Vercel doesn't alias
+  production to a failed build, so the live site stayed on the last good
+  deploy the whole time). This is now the standing procedure for any
+  large deploy: trim unused static assets first, then emit the deploy
+  call as the entire turn. **Reiterating the standing recommendation from
+  Phase 4/6:** git-linking this Vercel project to GitHub (Settings → Git
+  in the dashboard) would eliminate this whole category of problem going
+  forward — deploys would build from a `git push` instead of a manually
+  assembled file tree. Still needs the user to do it once via an
+  interactive OAuth flow this sandbox can't complete. Next: Phase 8
+  (Apple Health / Watch webhook bridge) — pending user go-ahead.
