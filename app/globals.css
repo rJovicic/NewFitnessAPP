@@ -1,0 +1,96 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * Design tokens — see CLAUDE.md §4 for the direction brief. Light theme
+ * only (mobile MVP, no dark mode). Palette: warm paper/ink neutrals +
+ * six semantic per-metric hues (not one purple gradient), desaturated
+ * rather than candy-pastel so they hold up as ring/bar fills. Type:
+ * Space Grotesk (display/numerals, tabular figures for the calorie ring)
+ * + IBM Plex Sans (body/labels) + IBM Plex Mono (data readouts) — a
+ * deliberate pairing, not the Inter default.
+ */
+
+:root {
+  --radius: 0.75rem;
+
+  --background: #fbf9f6;
+  --foreground: #1e2321;
+  --card: #ffffff;
+  --card-foreground: #1e2321;
+  --popover: #ffffff;
+  --popover-foreground: #1e2321;
+  --primary: #1e2321;
+  --primary-foreground: #fbf9f6;
+  --secondary: #f3f0ea;
+  --secondary-foreground: #1e2321;
+  --muted: #f3f0ea;
+  --muted-foreground: #6b655c;
+  --accent: #f3f0ea;
+  --accent-foreground: #1e2321;
+  --destructive: #c1483f;
+  --border: #e8e3da;
+  --input: #e8e3da;
+  --ring: #c9c2b4;
+
+  /* Semantic per-metric hues */
+  --calories: #ea7b54;
+  --protein: #c15c74;
+  --carbs: #dda43a;
+  --fat: #8fa377;
+  --water: #6c93a6;
+  --steps: #8b7a9e;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-calories: var(--calories);
+  --color-protein: var(--protein);
+  --color-carbs: var(--carbs);
+  --color-fat: var(--fat);
+  --color-water: var(--water);
+  --color-steps: var(--steps);
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-body);
+  --font-data: var(--font-data);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+}
+
+@layer utilities {
+  .tabular-data {
+    font-family: var(--font-data);
+    font-variant-numeric: tabular-nums;
+  }
+}

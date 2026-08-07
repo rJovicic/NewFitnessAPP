@@ -162,7 +162,40 @@ prior builds. The structure below exists specifically to prevent that here.
 ## Parking Lot
 *(enhancement ideas noticed mid-build, not yet approved — proposed at next STOP gate)*
 
--
+- Edit/delete a logged meal (currently no way to remove a mistaken scan/log from the Log screen).
+- OFF `/api/v2/search` endpoint for packaged products not yet in the local `foods` cache
+  (Phase 4 task 4 listed this as optional; local-catalog search was built, OFF search was not).
+- "Recently scanned" quick-add list so re-logging a frequently-eaten packaged product
+  doesn't require re-scanning the barcode every time.
+- Visual refresh toward the original reference screenshots (`docs/design-references/
+  ref-1..4.jpeg` — user re-sent the same 4 images mid-Phase-5 asking about a "full
+  makeover"; confirmed identical files, so no new direction, just a reminder these were
+  the brief). Current app already matches their structure (ring + 2-col stat grid + day
+  strip + bottom nav); the gap is saturation and a couple of surface details. User chose
+  to fold this into the existing Phase 10 polish pass rather than interrupt phase
+  progression. Concretely, for that pass: (1) tinted pastel card *backgrounds* per metric
+  instead of neutral cards with just a colored icon/ring accent, (2) consider a floating
+  rounded-pill bottom nav instead of the current flat bordered bar, (3) food-item photo
+  thumbnails are a bigger lift (needs an image source) — lowest priority of the three.
+
+## Known environment constraint (dev sandbox only, not the deployed app)
+
+The Claude Code sandbox's outbound network policy blocks several domains needed by
+tooling: `ui.shadcn.com` (shadcn CLI), `context7.com` (context7 MCP), and all
+`*.supabase.co`/`*.supabase.com` hosts (direct curl checks). This does **not** affect the
+deployed app — Vercel's build/runtime environment has normal internet access, confirmed
+by a working `/api/health` check against the live Supabase project. Practical
+consequences for future sessions:
+- shadcn/ui components must be hand-written (copy the known source, don't rely on
+  `npx shadcn add`) — done for Button in Phase 0, same pattern going forward.
+- context7 can't be queried directly from the sandbox; fall back to `npm view <pkg>
+  version` for version checks and to trained knowledge for API shapes, and say so.
+- Any "is Supabase/Vercel/npm-package-X reachable" check must go through an actual
+  deployed route (`/api/health`-style) hit via `web_fetch_vercel_url`, not a local `curl`.
+- `deploy_to_vercel` (file-tree deploy, no git needed) is the working deploy path here —
+  git-linking the Vercel project to GitHub for continuous deployment needs an interactive
+  browser OAuth flow this session can't do; ask the user to do that once via the Vercel
+  dashboard if continuous deployment becomes worth the setup.
 
 ---
 
@@ -215,3 +248,226 @@ before there's anything to plug into it.
 next, anything the user explicitly deferred or declined.)*
 
 - `YYYY-MM-DD` — Project bootstrapped. CLAUDE.md and BUILD-LOOP-PROMPT.md created. No code yet.
+- `2026-08-06` — Phase 0 complete. Next.js 16 (App Router/TS/Tailwind v4) scaffolded,
+  shadcn/ui wired by hand (registry domain blocked in-sandbox, see Known environment
+  constraint above), Supabase project (dvukiptlkmwevwiwnoho) connected via
+  `@supabase/ssr` client/server helpers, `.env.local` set and gitignored. Deployed to
+  Vercel (`new-fitness-app`, team `rjovicics-projects`) via `deploy_to_vercel` —
+  production URL live at new-fitness-app-lake.vercel.app, `/api/health` confirms
+  Supabase reachability (GoTrue 200). `docs/source-plan.pdf` and
+  `docs/design-references/*.jpeg` committed. All 4 STOP gate items verified. Next:
+  Phase 1 (database schema, auth, seed data from the PDF).
+- `2026-08-06` — Phase 1 complete. Schema applied via `supabase/migrations/0001_init.sql`
+  (13 tables, RLS on every table — 0 security-advisor lint findings). Seed data applied
+  from `supabase/seed.sql`: 7 workout_days, 34 exercises, 42 workout_day_exercises,
+  8 supplements, 35 recipe foods — all counts verified against the PDF via direct SQL
+  count query. `lib/macros.ts` (calculateTargets/calculateAge) unit-tested against the
+  PDF's own day-1 worked example — matches within its rounding, and doubly confirmed
+  against the real user (DOB 1998-03-29, age 28 as of today, coincidentally identical to
+  the PDF's placeholder age). Auth: `app/login`, `proxy.ts` + `lib/supabase/middleware.ts`
+  (whole app behind auth except /login and /api/health — no public marketing pages, see
+  §5 note below), `app/(dashboard)/page.tsx` as protected root. One real auth account
+  created (robert.jovicic98@gmail.com) and `profiles` row seeded (183cm/88kg→76.5kg).
+  User confirmed live login works at new-fitness-app-lake.vercel.app. All 4 STOP gate
+  items verified. Next: Phase 2 (dashboard shell & navigation) — pending user go-ahead.
+
+**Correction to §5:** the folder structure note said `app/(dashboard)/...` route groups
+don't add a URL prefix — confirmed true in practice. The auth boundary is therefore
+"everything except /login", not a `/dashboard/**` path check. `PUBLIC_PATHS` in
+`lib/supabase/middleware.ts` is the actual source of truth for what's public.
+- `2026-08-06` — Phase 2 complete. Design direction via `frontend-design` skill: warm
+  paper/ink neutrals + 6 desaturated semantic per-metric hues (calories/protein/carbs/
+  fat/water/steps), Space Grotesk + IBM Plex Sans/Mono pairing (not Inter/purple-gradient
+  default), calorie ring styled as a precision dial as the signature element.
+  `lib/nav-config.ts` drives the bottom tab bar; `app/(dashboard)/layout.tsx` is the
+  shared shell (header + nav). `lib/dashboard-data.ts` pulls real profile/weight/targets/
+  logged-macros/water/steps from Supabase — zeros pre-logging, not fake data.
+  `lib/tile-registry.tsx` is the array-driven tile grid proving out the Phase 9 add-on
+  pattern early. Placeholder Log/Train/Progress/Settings pages ship; sign-out moved to
+  Settings. STOP gate verified: build clean, all 5 nav routes resolve without errors
+  (automated check), and the user tested the live app on their own phone — calorie ring
+  showed 2,483 kcal target / 194g protein / 270g carbs / 70g fat, matching
+  `calculateTargets()` computed live from the real profile, all logged values correctly
+  zero. Noted for future sessions: this sandbox's network policy blocks `*.vercel.app`
+  entirely (confirmed via curl and a locally-launched Playwright browser alike), so
+  browser automation here can only reach `localhost` — real-device verification from the
+  user is the fallback for anything needing the live URL rendered/screenshotted. Next:
+  Phase 3 (14:10 fasting module) — pending user go-ahead.
+- `2026-08-06` — Phase 2 fixes (user-approved) + Phase 3 complete.
+  `lib/timezone.ts` is now the single source of truth for "what day/time is
+  it" (Europe/Zagreb, hardcoded — single-user, no timezone picker); replaces
+  the old UTC-boundary placeholder and the client-clock header. Day-strip
+  navigates via `?date=` (server-rendered Links, no client JS needed).
+  Calorie ring shows a destructive-toned "+Xg over" state instead of
+  silently capping at full. `supabase/migrations/0002_fasting_window.sql`
+  adds `profiles.eating_window_start/end` (10:00/19:30 default), editable
+  in Settings via a server action. `FastingTile` is a real ticking widget
+  now. `lib/fasting.ts` (`computeFastingHonored`, unit-tested against 6
+  cases incl. the 15-min grace boundary) + `lib/daily-activity.ts`
+  (`recomputeFastingHonored`, DB wrapper) are built and verified end-to-end
+  against the live DB with a temporary test meal outside the window
+  (honored flipped to `false` as expected, test data fully cleaned up
+  afterward) — but **not yet called from any user flow**, since meal
+  logging doesn't exist until Phase 4. Phase 4 must call
+  `recomputeFastingHonored()` after every meal log create/delete. STOP
+  gate: build clean, fasting logic verified against real DB, widget code
+  complete pending the user's visual confirmation on their phone (same
+  sandbox network-block as Phase 2 applies). Next: Phase 4 (nutrition &
+  food logging) — pending user go-ahead.
+- `2026-08-06` — Phase 4 complete. `supabase/migrations/0003_food_logging.sql`
+  adds `plan_meals` (weekday × meal_type → recipe food) plus the authenticated
+  INSERT/UPDATE policies on `foods` that Phase 1 left as a TODO;
+  `supabase/seed_plan_meals.sql` fills all 35 slots, matched to existing
+  recipe rows by name. `lib/off.ts` is the Open Food Facts v2 client
+  (`GET /product/{barcode}.json`, descriptive User-Agent); gluten status
+  derives from `labels_tags`/`allergens_tags` and defaults to `unknown`,
+  never "safe". `react-qr-barcode-scanner` chosen over the CLAUDE.md
+  candidates after `html5-qrcode` proved stale (last publish 2023, checked
+  via `npm view` since context7 is sandbox-blocked). `components/gf-badge.tsx`
+  is the three-state badge used everywhere a food shows; `gf-disclaimer.tsx`
+  is the standing cross-contamination notice. `app/(dashboard)/log/actions.ts`
+  centralizes lookup/search/manual-create/log-plan-meal/log-custom-meal, all
+  funneling through `finishMealLogging()` which increments
+  `daily_activity.meals_logged_count` and calls `recomputeFastingHonored()`
+  (closing the loop Phase 3 left open). `components/log-screen.tsx` is the
+  Log tab: today's plan with one-tap logging, a "Logged today" section for
+  anything scanned/manually added (added after the user reported scanned
+  items had no visible confirmation — fixed same session), and a meal
+  builder (scan/search/manual add → cart with adjustable quantity_g per item
+  → running subtotal → save). STOP gate verified on the live app by the
+  user on their phone: barcode scan → correct macros + GF badge, mixed
+  scanned/manual multi-item meal saved with correct running total, unknown
+  barcode fell back to manual entry without crashing, dashboard reflected
+  the logged meals. **Incident during this session:** a `deploy_to_vercel`
+  redeploy briefly took production down — the new deployment didn't have
+  `NEXT_PUBLIC_SUPABASE_URL`/`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` available
+  at runtime even though the same project had deployed fine before. No env-var
+  management tool was available in this session's Vercel MCP surface to
+  diagnose or fix it directly — the user re-added both vars in the Vercel
+  dashboard (Production scope) and a follow-up deploy picked them up
+  immediately. Flagging for future sessions: confirm Production env vars are
+  still present after any `deploy_to_vercel` call that returns a healthy
+  build but before declaring the STOP gate passed — `/api/health` is the
+  fast check. Next: Phase 5 (workout module) — approved, in progress.
+- `2026-08-06` — Phase 5 complete. `lib/workout.ts` (`currentProgressionBlock`)
+  maps weeks-since-`program_start_date` onto the PDF's 4-block/12-week table,
+  holding at block 4 once exhausted — verified against real seed data
+  (`program_start_date` = today, so block 1: 2 rounds/25s rest, matches the
+  seeded `block_progression` JSON exactly). `app/(dashboard)/train/actions.ts`:
+  `getTodaysWorkout()` resolves today's weekday to a `workout_day` and
+  block-adjusts every exercise's rounds/rest; `logWorkout()` writes
+  `workout_logs` and flips `daily_activity.workout_completed`;
+  `getRecentWorkoutLogs()` backs a small history list (added to satisfy the
+  STOP gate's "appears in a history list" wording, not spelled out in the
+  phase's task list itself). `components/rest-timer.tsx`: countdown with
+  +15s/-15s and skip, vibration + Web Audio beep at zero, no external audio
+  asset needed. `components/train-screen.tsx`: exercise overview → flattens
+  every exercise's rounds into a linear step list → walks through each set
+  with the rest timer in between → perceived-effort capture → save. Deployed
+  to production, `/api/health` confirmed green. **Process note:** the first
+  Phase 5 deploy shipped without `components/train-screen.tsx` — a manual
+  omission assembling the `deploy_to_vercel` file-tree payload, caught
+  immediately from the Vercel build log (`Module not found`) and fixed with
+  a corrected redeploy. User confirmed "Next phase" without flagging any
+  issue. **Design note (no code change):** user re-sent the 4 original
+  Phase 0 reference screenshots mid-phase asking about a "full UI makeover" —
+  confirmed identical files to `docs/design-references/ref-1..4.jpeg`, so no
+  new direction. Current app already matches their structure (ring + 2-col
+  stat grid + day strip + bottom nav); gap is mainly saturation (their cards
+  use tinted pastel backgrounds per metric, ours uses neutral cards + a
+  colored accent only) plus a rounded-pill nav shape and food-photo
+  thumbnails in some references. User chose to fold this into the existing
+  Phase 10 polish pass rather than interrupt phase progression — see Parking
+  Lot for the concrete punch list. Next: Phase 6 (body metrics & adjustment
+  engine) — approved, in progress.
+- `2026-08-06` — Phase 6 complete. `supabase/migrations/0004_progress_photos_storage.sql`
+  creates the `progress-photos` private Storage bucket + `{auth.uid()}/*`-scoped
+  RLS policies — a Phase 1 task that was specified but never actually applied;
+  closed that gap here. `app/(dashboard)/progress/actions.ts` covers weight
+  entry (upsert per day, so re-logging today overwrites rather than
+  duplicating), body measurements, photo upload with signed-URL retrieval
+  (bucket is private, so display needs `createSignedUrl`), and weight history
+  with a 7-day rolling average computed server-side.
+  `components/weight-chart.tsx` (recharts, newly added dependency) plots raw
+  points as noise + the rolling average as the signal line, per the PDF's own
+  framing. `lib/adjustment.ts` implements the 4 PDF Ch.13 rules (plateau,
+  fast weight loss, low energy, rising perceived effort) as pure functions —
+  unit-tested via a standalone `tsx` script (11/11 cases passing, including
+  each rule's negative case and a combined-trigger case), same pattern as
+  Phase 1/3's pure-function verification. `applyAdjustment()` only fires on
+  an explicit tap, updates `profiles.deficit_kcal`, and logs the change to
+  `custom_metrics` (Phase 9's designated add-on table) rather than a new
+  dedicated table. Deployed to production, `/api/health` and an
+  unauthenticated `/progress` redirect both confirmed. Live weight-entry →
+  dashboard-target and adjustment-banner-trigger verification (needs 2+
+  weeks of real data) deferred to the user's ongoing real-world use rather
+  than blocked on synthetic phone testing, consistent with how Phase 5 was
+  closed out. **Incident during this session:** user reported a 404
+  `DEPLOYMENT_NOT_FOUND` on their phone from a URL ending `-lac-ten.vercel.app`
+  — not one of this project's actual domains (`new-fitness-app-lake.vercel.app`
+  + two teammate-scoped aliases, confirmed via `get_project`). Resolved by
+  having the user navigate to the correct URL directly rather than a stale
+  bookmark/Home-Screen icon. Flagging for future sessions: if this recurs,
+  double-check the user isn't confusing "lake" (the real alias) with a
+  mistyped or autocompleted variant. Next: Phase 7 (habit system, daily
+  checklist, streaks) — approved, in progress.
+- `2026-08-07` — Phase 7 complete. `lib/streak.ts` (`computeStreak`) walks
+  backward from today over `daily_activity` rows, qualifying a day as
+  `workout_completed && meals_logged_count >= 3`, never a stored counter —
+  unit-tested 8/8 including the "today incomplete doesn't zero out
+  yesterday's streak" edge case. `app/(dashboard)/checklist-actions.ts`
+  (`addWater`, `logSleepHours`, `toggleSupplement`, `getDailyChecklist`)
+  and `components/daily-checklist.tsx` render a real Workout/Meals/Water/
+  Steps/Sleep checklist plus a supplement-toggle list on the dashboard,
+  wired into `app/(dashboard)/page.tsx` (checklist only shown when viewing
+  today, since its writes always target "today" regardless of which date
+  the day-strip is showing). `StreakTile` now takes a real `streak` prop
+  from `lib/dashboard-data.ts` instead of the Phase 2 placeholder. Steps
+  render as "Not synced yet" until Phase 8's Health bridge exists, rather
+  than faking an input. Deployed to production, `/api/health` and an
+  unauthenticated `/progress` redirect both confirmed.
+  **Incident — deploy mechanics, worth reading before any future
+  `deploy_to_vercel` call:** this session hit a hard output-size ceiling
+  when assembling the full-tree deploy payload directly (single tool calls
+  topped out somewhere in the ~35–60KB range; the full ~172KB/66-file tree
+  failed outright, and even a background sub-agent given the exact same
+  file list failed the same way three times in a row — twice from hitting
+  the same ceiling mid-assembly, once from an account-level session/usage
+  cap). What worked: (1) trim the payload first — drop files nothing
+  imports (`app/favicon.ico`, `components.json`, and the unused
+  `create-next-app` placeholder SVGs in `public/`, confirmed via grep that
+  nothing references them), cutting ~172KB to ~134KB; (2) submit the full
+  trimmed file set in one `deploy_to_vercel` call with the response
+  containing *only* that tool call and no other narration, since any
+  extra text ate into the same per-turn budget. Two earlier attempts that
+  included explanatory text around the tool call only got 1 and then 15
+  of the files in before truncating, which produced real but broken
+  "Error" deployments on Vercel (harmless — Vercel doesn't alias
+  production to a failed build, so the live site stayed on the last good
+  deploy the whole time). This is now the standing procedure for any
+  large deploy: trim unused static assets first, then emit the deploy
+  call as the entire turn. **Reiterating the standing recommendation from
+  Phase 4/6:** git-linking this Vercel project to GitHub (Settings → Git
+  in the dashboard) would eliminate this whole category of problem going
+  forward — deploys would build from a `git push` instead of a manually
+  assembled file tree. Still needs the user to do it once via an
+  interactive OAuth flow this sandbox can't complete. Next: Phase 8
+  (Apple Health / Watch webhook bridge) — pending user go-ahead.
+- `2026-08-07` — Two user-reported UX bugs fixed before starting Phase 8.
+  (1) Tab switches (Log/Train especially) showed a blank screen during
+  the server round-trip — no `loading.tsx` existed anywhere in the
+  `(dashboard)` route group, so Next.js had no Suspense fallback to show.
+  Added one per route (`/`, `/log`, `/train`, `/progress`) with a simple
+  `animate-pulse` skeleton matching each screen's rough layout. (2) Water
+  could only be logged from a button buried in the "Today's checklist"
+  section further down the dashboard — the Water tile itself (the
+  visible, high-up stat card) was read-only. Added `isToday: boolean` to
+  `DashboardData` (`lib/dashboard-data.ts`) and converted `WaterTile` to
+  a client component with its own +250ml/+500ml quick-add buttons,
+  shown only when viewing today (writes always target today's date
+  regardless of which day the day-strip shows, same constraint the
+  checklist's water row already had). Verified with a clean local
+  `npm run build` before deploying. Deployed via `deploy_to_vercel`
+  (63 files, same trim-and-single-call approach as the Phase 7 deploy);
+  `/api/health` confirmed green. Next: Phase 8 (Apple Health / Watch
+  webhook bridge) — approved, in progress.
