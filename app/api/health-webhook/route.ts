@@ -46,15 +46,30 @@ function extractValue(metricName: string, point: HealthAutoExportDataPoint): num
   return null;
 }
 
-export async function POST(request: NextRequest) {
+function checkAuth(request: NextRequest): NextResponse | null {
   const expectedToken = process.env.HEALTH_WEBHOOK_TOKEN;
   if (!expectedToken) {
     return NextResponse.json({ ok: false, error: "Webhook not configured" }, { status: 500 });
   }
-
   if (request.headers.get("authorization") !== `Bearer ${expectedToken}`) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
+  return null;
+}
+
+// Health Auto Export pings the endpoint with a GET/HEAD before the real
+// POST sync when an automation is saved or run manually — without this,
+// that connectivity check 405s and the app reports the automation as
+// failed even though the actual sync would have worked.
+export async function GET(request: NextRequest) {
+  const authError = checkAuth(request);
+  if (authError) return authError;
+  return NextResponse.json({ ok: true, message: "Health webhook is reachable. Use POST to sync data." });
+}
+
+export async function POST(request: NextRequest) {
+  const authError = checkAuth(request);
+  if (authError) return authError;
 
   let body: { data?: { metrics?: HealthAutoExportMetric[] } };
   try {
