@@ -13,6 +13,7 @@ export const SLEEP_TARGET_HOURS = 7;
 export interface DashboardData {
   fullName: string;
   dateStr: string;
+  isToday: boolean;
   targets: {
     targetKcal: number;
     proteinG: number;
@@ -108,6 +109,7 @@ export async function getDashboardData(
   return {
     fullName: profile.full_name ?? "there",
     dateStr,
+    isToday: dateStr === realToday,
     targets: {
       targetKcal: Math.round(targets.targetKcal),
       proteinG: Math.round(targets.proteinG),
