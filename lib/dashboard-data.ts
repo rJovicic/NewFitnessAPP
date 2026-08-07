@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { calculateAge, calculateTargets } from "@/lib/macros";
 import { todayInAppTimezone, zonedDayRangeUtc } from "@/lib/timezone";
 import { computeStreak, type DailyActivitySummary } from "@/lib/streak";
+import { getSyncedDailyMetrics } from "@/lib/health-metrics";
 
 // Shared daily targets — not per-profile settings yet, just the PDF's
 // general guidance. Used here and by the Phase 7 daily checklist so the
@@ -88,6 +89,8 @@ export async function getDashboardData(
     .eq("activity_date", dateStr)
     .maybeSingle();
 
+  const synced = await getSyncedDailyMetrics(user.id, dateStr);
+
   // Streak is always relative to the real current day, not whatever date
   // the day-strip happens to be viewing.
   const realToday = todayInAppTimezone();
@@ -123,7 +126,7 @@ export async function getDashboardData(
       fatG: Math.round(logged.fatG),
     },
     water: { ml: activity?.water_ml ?? 0, targetMl: WATER_TARGET_ML },
-    steps: { count: activity?.steps ?? 0, targetCount: STEPS_TARGET },
+    steps: { count: synced.steps ?? activity?.steps ?? 0, targetCount: STEPS_TARGET },
     fastingWindow: {
       start: profile.eating_window_start ?? "10:00",
       end: profile.eating_window_end ?? "19:30",

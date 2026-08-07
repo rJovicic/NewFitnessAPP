@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { todayInAppTimezone } from "@/lib/timezone";
 import { WATER_TARGET_ML, STEPS_TARGET, SLEEP_TARGET_HOURS } from "@/lib/dashboard-data";
+import { getSyncedDailyMetrics } from "@/lib/health-metrics";
 
 export async function addWater(ml: number): Promise<{ ok: boolean }> {
   const supabase = await createClient();
@@ -127,14 +128,16 @@ export async function getDailyChecklist(): Promise<DailyChecklistData | null> {
     (todaysSupplementLogs ?? []).filter((l) => l.taken).map((l) => l.supplement_id)
   );
 
+  const synced = await getSyncedDailyMetrics(user.id, dateStr);
+
   return {
     workoutCompleted: today?.workout_completed ?? false,
     mealsLoggedCount: today?.meals_logged_count ?? 0,
     waterMl: today?.water_ml ?? 0,
     waterTargetMl: WATER_TARGET_ML,
-    steps: today?.steps ?? null,
+    steps: synced.steps ?? today?.steps ?? null,
     stepsTarget: STEPS_TARGET,
-    sleepHours: today?.sleep_hours ?? null,
+    sleepHours: synced.sleepHours ?? today?.sleep_hours ?? null,
     sleepTargetHours: SLEEP_TARGET_HOURS,
     supplements: (supplements ?? []).map((s) => ({
       id: s.id,
