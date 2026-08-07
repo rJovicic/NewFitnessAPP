@@ -453,3 +453,21 @@ don't add a URL prefix — confirmed true in practice. The auth boundary is ther
   assembled file tree. Still needs the user to do it once via an
   interactive OAuth flow this sandbox can't complete. Next: Phase 8
   (Apple Health / Watch webhook bridge) — pending user go-ahead.
+- `2026-08-07` — Two user-reported UX bugs fixed before starting Phase 8.
+  (1) Tab switches (Log/Train especially) showed a blank screen during
+  the server round-trip — no `loading.tsx` existed anywhere in the
+  `(dashboard)` route group, so Next.js had no Suspense fallback to show.
+  Added one per route (`/`, `/log`, `/train`, `/progress`) with a simple
+  `animate-pulse` skeleton matching each screen's rough layout. (2) Water
+  could only be logged from a button buried in the "Today's checklist"
+  section further down the dashboard — the Water tile itself (the
+  visible, high-up stat card) was read-only. Added `isToday: boolean` to
+  `DashboardData` (`lib/dashboard-data.ts`) and converted `WaterTile` to
+  a client component with its own +250ml/+500ml quick-add buttons,
+  shown only when viewing today (writes always target today's date
+  regardless of which day the day-strip shows, same constraint the
+  checklist's water row already had). Verified with a clean local
+  `npm run build` before deploying. Deployed via `deploy_to_vercel`
+  (63 files, same trim-and-single-call approach as the Phase 7 deploy);
+  `/api/health` confirmed green. Next: Phase 8 (Apple Health / Watch
+  webhook bridge) — approved, in progress.
