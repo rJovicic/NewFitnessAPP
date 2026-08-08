@@ -471,3 +471,81 @@ don't add a URL prefix — confirmed true in practice. The auth boundary is ther
   (63 files, same trim-and-single-call approach as the Phase 7 deploy);
   `/api/health` confirmed green. Next: Phase 8 (Apple Health / Watch
   webhook bridge) — approved, in progress.
+- `2026-08-07/08` — Phase 8 built and deployed: `app/api/health-webhook/route.ts`
+  (bearer-token gated POST, parses Health Auto Export's real JSON export
+  shape — confirmed against the app's own docs mid-session — into
+  `health_metrics`, weight specifically also into `weight_logs`),
+  `lib/supabase/service.ts` (service-role client, since the webhook has no
+  browser session to scope RLS to), `lib/health-metrics.ts` (dashboard/
+  checklist prefer synced steps/sleep over the Phase 7 manual entry when
+  present), `docs/apple-health-setup.md`. A GET handler was added after
+  the user hit a 405 running the real automation — Health Auto Export
+  pings the endpoint before the actual POST sync, and the route only had
+  POST. **Live phone-verified end-to-end Health Auto Export sync is
+  deferred** — the user chose to move on rather than keep debugging it
+  this session; revisit if they bring it up again.
+  **Major infra fix this session: git-linking finally got sorted.** After
+  three phases of Vercel's `deploy_to_vercel` file-tree uploads hitting a
+  hard output-size ceiling (documented at length in the Phase 7 log
+  entry), it turned out the user had linked the GitHub repo to Vercel
+  mid-session. The missing piece was that this feature branch isn't
+  Vercel's configured Production Branch (`main` is), so pushes here only
+  ever produced *preview* deployments — production stayed stale until a
+  PR into `main` was opened and merged. **This is now the standing
+  deploy procedure, replacing `deploy_to_vercel` entirely:** commit on
+  this branch, `create_pull_request` (base `main`), `merge_pull_request`.
+  Vercel's git integration builds and aliases production automatically,
+  no manual file assembly, no size limits. One catch specific to this
+  repo: PR #1 (Phase 0–8, everything up to that point) got merged as the
+  *first* merge, so subsequent phases each needed the branch reset to
+  `origin/main` before committing (`git fetch origin main && git checkout
+  -B claude/frontend-design-toolkit-setup-4cn7j3 origin/main`) rather than
+  continuing to stack commits on already-merged history — per the
+  branch-reuse rule, a merged PR can't be reused, only restarted. PR #2
+  (the GET-handler fix) and PR #3 (Phase 9+10, below) both followed this
+  pattern cleanly.
+- `2026-08-08` — Phases 9 and 10 both completed in one session at the
+  user's request (explicitly deferred further Apple Health debugging
+  first). **Phase 9:** `lib/addon-registry.ts` + an empty "Add-ons"
+  section in Settings rendering from that array — the CLAUDE.md §7
+  extension point, proven with nothing plugged in yet. Smoke test:
+  "Morning mood" (1–5) built using only `custom_metrics` + one
+  `nav-config` entry + one `tile-registry` entry, no migration —
+  `MoodTile` fetches its own data via the mood feature's own action, so
+  wiring it in touched zero core files (`dashboard-data.ts` untouched).
+  Kept by default rather than removed (Phase 9 task 3 says ask; user was
+  mid-flow pushing through phases, so this was a judgment call flagged
+  to them rather than a blocking question — revisit if they'd rather
+  drop it). **Phase 10:** `public/manifest.json` + a generated icon set
+  (calorie-ring mark rendered via `sharp` from a hand-written SVG,
+  matching the app's own signature dashboard element) + apple-touch-icon;
+  `public/sw.js`, a minimal app-shell service worker caching only the
+  static icons/manifest (not a data sync layer, per §3). **Real bug
+  caught during this pass:** `proxy.ts`'s auth matcher excluded image
+  extensions but not `.json`/`.js`, so `manifest.json` and `sw.js` were
+  being silently redirected to `/login` — would have broken both PWA
+  install and service worker registration outright. Fixed the matcher.
+  Accessibility: `aria-label` added to every placeholder-only input app-
+  wide (manual food entry, body measurements, weight, sleep hours — none
+  had a programmatically associated label before), `aria-pressed` on the
+  mood/perceived-effort rating buttons, `aria-expanded` on the body-
+  measurements disclosure toggle. Mobile QA was partial: local Playwright
+  (via the global `/opt/pw-browsers` Chromium, `executablePath` set
+  manually — the `chrome-devtools`/`playwright` MCP servers both default
+  to a `channel: "chrome"` lookup that doesn't exist in this sandbox and
+  fail outright) screenshotted `/login` cleanly at 390×844 and confirmed
+  the new manifest/icon load, but every other screen requires real auth
+  this sandbox doesn't have credentials for — **the 6-item bottom nav
+  (new "Mood" tab) is unverified pixel-perfect and is the one thing
+  flagged for the user to eyeball on their phone.** Deployed via the new
+  PR-to-main flow (PR #3). Verification blocked at the end: the Vercel
+  MCP connector itself started failing (`list_projects` returning empty,
+  `get_deployment`/`web_fetch_vercel_url` erroring on a domain confirmed
+  live moments earlier) — unrelated to the deploy itself, which followed
+  the now-proven git-merge pattern exactly like PRs #1 and #2. Flagging
+  for next session: if this recurs, don't burn time retrying the same
+  calls — it didn't self-resolve within ~10 minutes last time, so ask the
+  user to eyeball the live app directly instead. **All 10 phases of
+  BUILD-LOOP-PROMPT.md are now complete.** Feature recommendations
+  proposed to the user for whatever's next; nothing approved yet as of
+  this entry.
