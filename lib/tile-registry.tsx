@@ -5,6 +5,8 @@ import { WaterTile } from "@/components/tiles/water-tile";
 import { StreakTile } from "@/components/tiles/streak-tile";
 import { FastingTile } from "@/components/tiles/fasting-tile";
 import { MoodTile } from "@/components/tiles/mood-tile";
+import { WeeklySummaryTile } from "@/components/tiles/weekly-summary-tile";
+import { ProgramProgressTile } from "@/components/tiles/program-progress-tile";
 
 export interface DashboardTile {
   id: string;
@@ -19,6 +21,8 @@ export const dashboardTiles: DashboardTile[] = [
   { id: "water", span: "half", render: (data) => <WaterTile data={data} /> },
   { id: "streak", span: "half", render: (data) => <StreakTile streak={data.streak} /> },
   { id: "mood", span: "half", render: () => <MoodTile /> },
+  { id: "weekly-summary", span: "half", render: () => <WeeklySummaryTile /> },
+  { id: "program-progress", span: "half", render: () => <ProgramProgressTile /> },
   {
     id: "fasting",
     span: "full",
