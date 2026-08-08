@@ -13,11 +13,13 @@ import {
   logMeal,
   lookupBarcode,
   searchFoods,
+  searchOffFoods,
   createManualFood,
   type PlanMealEntry,
   type FoodResult,
   type MealItemInput,
   type LoggedCustomMeal,
+  type OffSearchResult,
 } from "@/app/(dashboard)/log/actions";
 
 interface CartItem extends MealItemInput {
@@ -53,6 +55,8 @@ export function LogScreen({
   const [scanMessage, setScanMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<FoodResult[]>([]);
+  const [offResults, setOffResults] = useState<OffSearchResult[]>([]);
+  const [resolvingCode, setResolvingCode] = useState<string | null>(null);
   const [manualEntryOpen, setManualEntryOpen] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
@@ -73,6 +77,7 @@ export function LogScreen({
     ]);
     setScanMessage(null);
     setSearchResults([]);
+    setOffResults([]);
     setSearchQuery("");
   }
 
@@ -100,7 +105,26 @@ export function LogScreen({
 
   async function handleSearch(query: string) {
     setSearchQuery(query);
-    setSearchResults(query.trim() ? await searchFoods(query) : []);
+    if (!query.trim()) {
+      setSearchResults([]);
+      setOffResults([]);
+      return;
+    }
+    const [local, off] = await Promise.all([searchFoods(query), searchOffFoods(query)]);
+    setSearchResults(local);
+    const localNames = new Set(local.map((f) => f.name.toLowerCase()));
+    setOffResults(off.filter((f) => !localNames.has(f.name.toLowerCase())));
+  }
+
+  async function handleSelectOffResult(result: OffSearchResult) {
+    setResolvingCode(result.code);
+    const lookup = await lookupBarcode(result.code);
+    setResolvingCode(null);
+    if (lookup.status === "found") {
+      addToCart(lookup.food);
+    } else {
+      setScanMessage("Couldn't load that product's details. Try again.");
+    }
   }
 
   function updateQuantity(key: string, quantityG: number) {
@@ -273,7 +297,7 @@ export function LogScreen({
                 className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
               />
             </div>
-            {searchResults.length > 0 && (
+            {(searchResults.length > 0 || offResults.length > 0) && (
               <div className="flex flex-col gap-1 rounded-md border border-border">
                 {searchResults.map((food) => (
                   <button
@@ -283,6 +307,24 @@ export function LogScreen({
                   >
                     <span>{food.name}</span>
                     <GfBadge status={food.glutenStatus} />
+                  </button>
+                ))}
+                {offResults.map((result) => (
+                  <button
+                    key={result.code}
+                    onClick={() => handleSelectOffResult(result)}
+                    disabled={resolvingCode === result.code}
+                    className="flex items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50"
+                  >
+                    <span>
+                      {result.name}
+                      {result.brand && (
+                        <span className="text-muted-foreground"> · {result.brand}</span>
+                      )}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {resolvingCode === result.code ? "Loading..." : "Open Food Facts"}
+                    </span>
                   </button>
                 ))}
               </div>

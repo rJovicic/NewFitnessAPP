@@ -19,6 +19,40 @@ export interface OffProduct {
   raw: unknown;
 }
 
+export interface OffSearchResult {
+  code: string;
+  name: string;
+  brand: string | null;
+}
+
+// Text search by product name — separate endpoint from the barcode lookup
+// above. Same sandbox caveat as the rest of this file: shape verified from
+// training knowledge / OFF's public API docs, not a live sandbox request
+// (world.openfoodfacts.org is proxy-blocked here same as *.vercel.app).
+// On select, the caller re-resolves via fetchOffProduct(code) so the actual
+// macro/gluten parsing only has one code path to trust.
+export async function searchOffProducts(query: string, limit = 10): Promise<OffSearchResult[]> {
+  const params = new URLSearchParams({
+    search_terms: query,
+    fields: "code,product_name,brands",
+    page_size: String(limit),
+  });
+  const res = await fetch(`${OFF_BASE}/search?${params.toString()}`, {
+    headers: { "User-Agent": USER_AGENT },
+  });
+  if (!res.ok) return [];
+
+  const json = await res.json();
+  const products = (json.products as Record<string, unknown>[]) ?? [];
+  return products
+    .filter((p) => p.code && p.product_name)
+    .map((p) => ({
+      code: String(p.code),
+      name: p.product_name as string,
+      brand: (p.brands as string) || null,
+    }));
+}
+
 export async function fetchOffProduct(barcode: string): Promise<OffProduct | null> {
   const res = await fetch(`${OFF_BASE}/product/${encodeURIComponent(barcode)}.json`, {
     headers: { "User-Agent": USER_AGENT },

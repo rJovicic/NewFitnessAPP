@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { fetchOffProduct } from "@/lib/off";
+import { fetchOffProduct, searchOffProducts, type OffSearchResult } from "@/lib/off";
 import { recomputeFastingHonored } from "@/lib/daily-activity";
 import { todayInAppTimezone, weekdayIndex, zonedDayRangeUtc } from "@/lib/timezone";
 import type { GlutenStatus } from "@/components/gf-badge";
@@ -109,6 +109,22 @@ export async function searchFoods(query: string): Promise<FoodResult[]> {
     .ilike("name", `%${query.trim()}%`)
     .limit(20);
   return (data ?? []).map(toFoodResult);
+}
+
+export type { OffSearchResult };
+
+// Text search against Open Food Facts for packaged products not yet in the
+// local cache. Results are previews only (no macros) — selecting one
+// re-resolves through lookupBarcode() so caching/gluten-status derivation
+// stays on the single tested code path instead of being duplicated here.
+export async function searchOffFoods(query: string): Promise<OffSearchResult[]> {
+  const trimmed = query.trim();
+  if (trimmed.length < 2) return [];
+  try {
+    return await searchOffProducts(trimmed);
+  } catch {
+    return [];
+  }
 }
 
 export async function createManualFood(input: {

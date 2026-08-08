@@ -163,8 +163,6 @@ prior builds. The structure below exists specifically to prevent that here.
 *(enhancement ideas noticed mid-build, not yet approved — proposed at next STOP gate)*
 
 - Edit/delete a logged meal (currently no way to remove a mistaken scan/log from the Log screen).
-- OFF `/api/v2/search` endpoint for packaged products not yet in the local `foods` cache
-  (Phase 4 task 4 listed this as optional; local-catalog search was built, OFF search was not).
 - "Recently scanned" quick-add list so re-logging a frequently-eaten packaged product
   doesn't require re-scanning the barcode every time.
 - Visual refresh toward the original reference screenshots (`docs/design-references/
@@ -549,3 +547,38 @@ don't add a URL prefix — confirmed true in practice. The auth boundary is ther
   BUILD-LOOP-PROMPT.md are now complete.** Feature recommendations
   proposed to the user for whatever's next; nothing approved yet as of
   this entry.
+- `2026-08-08` — Post-Phase-10 add-on batch: OFF name search fix + two
+  approved feature proposals (#4 weekly summary, #5 program progress).
+  **OFF search:** `lib/off.ts` gained `searchOffProducts()` against
+  `GET /api/v2/search` (same sandbox-blocked-domain caveat as the
+  existing barcode client — confirmed via direct curl this session,
+  403 from the sandbox proxy, consistent with `*.vercel.app` and
+  `help.healthyapps.dev` being blocked the same way; Vercel's runtime has
+  full internet access, same as the barcode path that's been live since
+  Phase 4). `searchFoods()` in the Log screen's "Or search" box now
+  queries the local cache and OFF in parallel; OFF results are previews
+  only (code/name/brand, deduped against local results by name) and
+  resolve through the existing, already-tested `lookupBarcode()` on
+  selection rather than duplicating the insert/gluten-status logic.
+  Closes the Parking Lot item from Phase 4. **Weekly summary + program
+  progress:** `lib/weekly-summary.ts` (`computeWeeklySummary`) and
+  `lib/program-progress.ts` (`computeProgramProgress`) are pure functions,
+  unit-tested via a standalone script (17/17 cases, incl. mid-week partial
+  data, zero-history, goal-overshoot clamping, and the 30-week cap) — same
+  verification pattern as streak/adjustment/fasting. Both wired in as
+  self-contained tiles (`WeeklySummaryTile`, `ProgramProgressTile`, each
+  with its own `app/(dashboard)/*/actions.ts`) added to
+  `lib/tile-registry.tsx` — zero changes to `dashboard-data.ts`, proving
+  the Phase 9 extension pattern again. Program progress uses the
+  documented ~28–32 week timeline's midpoint (30) purely as a display
+  estimate, not a hard deadline — noted in-code since actual pace depends
+  on adherence and the Phase 6 adjustment engine. **Scope clarification
+  answered, not built:** user asked whether Phase 10 was supposed to be a
+  full UI redesign — it was not; Phase 10 per `BUILD-LOOP-PROMPT.md` was
+  PWA/accessibility/QA/deploy verification only. The visual-refresh item
+  (tinted per-metric card backgrounds, pill-shaped nav) noted at the
+  Phase 5 STOP gate as "folded into Phase 10 polish" was never actually
+  executed — flagged honestly to the user rather than left ambiguous;
+  still sitting in the Parking Lot above pending explicit approval.
+  Build verified clean (`npm run build`) before commit. Next: pending
+  user go-ahead on the visual refresh or further feature requests.
