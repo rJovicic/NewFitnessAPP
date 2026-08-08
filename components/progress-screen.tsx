@@ -154,6 +154,7 @@ export function ProgressScreen({
             step="0.1"
             inputMode="decimal"
             placeholder="Weight (kg)"
+            aria-label="Weight in kilograms"
             value={weightInput}
             onChange={(e) => setWeightInput(e.target.value)}
             className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm"
@@ -168,6 +169,7 @@ export function ProgressScreen({
       <section className="flex flex-col gap-3">
         <button
           onClick={() => setMeasurementsOpen((v) => !v)}
+          aria-expanded={measurementsOpen}
           className="flex items-center justify-between"
         >
           <h2 className="font-display text-lg font-semibold">Body measurements</h2>
@@ -182,6 +184,7 @@ export function ProgressScreen({
             <div className="grid grid-cols-2 gap-2">
               <input
                 placeholder="Waist cm"
+                aria-label="Waist measurement in centimeters"
                 type="number"
                 value={measurements.waist}
                 onChange={(e) => setMeasurements((m) => ({ ...m, waist: e.target.value }))}
@@ -189,6 +192,7 @@ export function ProgressScreen({
               />
               <input
                 placeholder="Chest cm"
+                aria-label="Chest measurement in centimeters"
                 type="number"
                 value={measurements.chest}
                 onChange={(e) => setMeasurements((m) => ({ ...m, chest: e.target.value }))}
@@ -196,6 +200,7 @@ export function ProgressScreen({
               />
               <input
                 placeholder="Hips cm"
+                aria-label="Hips measurement in centimeters"
                 type="number"
                 value={measurements.hips}
                 onChange={(e) => setMeasurements((m) => ({ ...m, hips: e.target.value }))}
@@ -203,6 +208,7 @@ export function ProgressScreen({
               />
               <input
                 placeholder="Biceps cm"
+                aria-label="Biceps measurement in centimeters"
                 type="number"
                 value={measurements.biceps}
                 onChange={(e) => setMeasurements((m) => ({ ...m, biceps: e.target.value }))}
@@ -210,6 +216,7 @@ export function ProgressScreen({
               />
               <input
                 placeholder="Thigh cm"
+                aria-label="Thigh measurement in centimeters"
                 type="number"
                 value={measurements.thigh}
                 onChange={(e) => setMeasurements((m) => ({ ...m, thigh: e.target.value }))}

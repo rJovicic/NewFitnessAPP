@@ -127,6 +127,7 @@ export function DailyChecklist({ data }: { data: DailyChecklistData }) {
                 step="0.5"
                 inputMode="decimal"
                 placeholder="Hours"
+                aria-label="Sleep hours"
                 value={sleepInput}
                 onChange={(e) => setSleepInput(e.target.value)}
                 className="h-8 w-20 rounded-md border border-input bg-background px-2 text-sm"

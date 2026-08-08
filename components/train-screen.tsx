@@ -119,6 +119,8 @@ export function TrainScreen({
               key={n}
               variant={perceivedEffort === n ? "default" : "outline"}
               size="sm"
+              aria-label={`Perceived effort ${n} out of 5`}
+              aria-pressed={perceivedEffort === n}
               onClick={() => setPerceivedEffort(n)}
             >
               {n}

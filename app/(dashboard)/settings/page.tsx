@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { addonRegistry } from "@/lib/addon-registry";
 import { updateFastingWindow } from "./actions";
 
 export default async function SettingsPage() {
@@ -65,6 +67,23 @@ export default async function SettingsPage() {
               Save
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="flex flex-col gap-2">
+          <p className="text-sm font-medium">Add-ons</p>
+          {addonRegistry.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              No add-ons yet. Approved extras get a line here — nothing to configure until then.
+            </p>
+          ) : (
+            addonRegistry.map((addon) => (
+              <Link key={addon.id} href={addon.href} className="text-sm underline">
+                {addon.label}
+              </Link>
+            ))
+          )}
         </CardContent>
       </Card>
     </div>
