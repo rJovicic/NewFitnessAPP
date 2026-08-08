@@ -4,6 +4,7 @@ import { MacrosTile } from "@/components/tiles/macros-tile";
 import { WaterTile } from "@/components/tiles/water-tile";
 import { StreakTile } from "@/components/tiles/streak-tile";
 import { FastingTile } from "@/components/tiles/fasting-tile";
+import { MoodTile } from "@/components/tiles/mood-tile";
 
 export interface DashboardTile {
   id: string;
@@ -17,6 +18,7 @@ export const dashboardTiles: DashboardTile[] = [
   { id: "macros", span: "full", render: (data) => <MacrosTile data={data} /> },
   { id: "water", span: "half", render: (data) => <WaterTile data={data} /> },
   { id: "streak", span: "half", render: (data) => <StreakTile streak={data.streak} /> },
+  { id: "mood", span: "half", render: () => <MoodTile /> },
   {
     id: "fasting",
     span: "full",

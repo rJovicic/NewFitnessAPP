@@ -397,6 +397,7 @@ function ManualEntryForm({ onCreated }: { onCreated: (food: FoodResult) => void 
       </p>
       <input
         placeholder="Name"
+        aria-label="Food name"
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
@@ -405,6 +406,7 @@ function ManualEntryForm({ onCreated }: { onCreated: (food: FoodResult) => void 
       <div className="grid grid-cols-4 gap-2">
         <input
           placeholder="kcal"
+          aria-label="Calories per 100g"
           type="number"
           value={kcal}
           onChange={(e) => setKcal(e.target.value)}
@@ -413,6 +415,7 @@ function ManualEntryForm({ onCreated }: { onCreated: (food: FoodResult) => void 
         />
         <input
           placeholder="protein g"
+          aria-label="Protein grams per 100g"
           type="number"
           value={protein}
           onChange={(e) => setProtein(e.target.value)}
@@ -421,6 +424,7 @@ function ManualEntryForm({ onCreated }: { onCreated: (food: FoodResult) => void 
         />
         <input
           placeholder="carbs g"
+          aria-label="Carbs grams per 100g"
           type="number"
           value={carbs}
           onChange={(e) => setCarbs(e.target.value)}
@@ -429,6 +433,7 @@ function ManualEntryForm({ onCreated }: { onCreated: (food: FoodResult) => void 
         />
         <input
           placeholder="fat g"
+          aria-label="Fat grams per 100g"
           type="number"
           value={fat}
           onChange={(e) => setFat(e.target.value)}

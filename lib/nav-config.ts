@@ -3,6 +3,7 @@ import {
   UtensilsCrossed,
   Dumbbell,
   LineChart,
+  Smile,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -21,5 +22,6 @@ export const navConfig: NavItem[] = [
   { href: "/log", label: "Log", icon: UtensilsCrossed },
   { href: "/train", label: "Train", icon: Dumbbell },
   { href: "/progress", label: "Progress", icon: LineChart },
+  { href: "/mood", label: "Mood", icon: Smile },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
