@@ -36,7 +36,7 @@ export function MetricCard({
 }) {
   const { bg, fg } = TONE_CLASSES[tone];
   return (
-    <div className={cn("flex flex-col gap-2 rounded-xl p-4", bg, className)}>
+    <div className={cn("flex flex-col gap-2 rounded-lg p-4", bg, className)}>
       <div className={cn("flex items-center gap-1.5", fg)}>
         <Icon className="size-4" strokeWidth={2} />
         <span className="text-sm font-medium text-foreground">{label}</span>

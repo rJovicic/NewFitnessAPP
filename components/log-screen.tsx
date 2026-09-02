@@ -369,9 +369,11 @@ export function LogScreen({
         return (
           <section key={slot.type} className="flex flex-col gap-2">
             <div className="flex items-start justify-between gap-3 px-0.5">
-              <div>
-                <p className="text-sm font-semibold">{slot.label}</p>
-                <p className="text-xs text-muted-foreground">{slot.time}</p>
+              <div className="flex flex-col gap-0.5">
+                <p className="tabular-data text-xs text-muted-foreground">{slot.time}</p>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {slot.label}
+                </p>
               </div>
               {loggedEntries.length > 0 && (
                 <div className="text-right">
@@ -608,7 +610,7 @@ export function LogScreen({
             {(() => {
               const m = macrosForQuantity(selectedFood, quantityG);
               return (
-                <div className="rounded-xl bg-muted p-4 text-center">
+                <div className="rounded-lg bg-muted p-4 text-center">
                   <p className="tabular-data text-2xl font-semibold">{m.kcal} kcal</p>
                   <p className="tabular-data text-xs text-muted-foreground">
                     Protein {m.protein}g · Carbs {m.carbs}g · Fat {m.fat}g

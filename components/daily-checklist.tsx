@@ -1,45 +1,45 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Circle } from "lucide-react";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import {
-  addWater,
   logSleepHours,
   toggleSupplement,
   type DailyChecklistData,
 } from "@/app/(dashboard)/checklist-actions";
 
-function ChecklistRow({
-  done,
-  label,
-  detail,
-  children,
-}: {
-  done: boolean;
+interface ChecklistItem {
   label: string;
+  done: boolean;
   detail: string;
-  children?: React.ReactNode;
-}) {
+  children?: ReactNode;
+}
+
+// A numbered ritual list, not a card full of checkbox widgets — the row
+// itself (number, label, value, thin divider) carries the hierarchy, so
+// no border/background/shadow wrapper is needed per item.
+function ChecklistRow({ index, item }: { index: number; item: ChecklistItem }) {
   return (
-    <div className="flex flex-col gap-1.5 border-b border-border py-3 last:border-0">
-      <div className="flex items-center gap-2.5">
-        {done ? (
+    <div className="flex flex-col gap-2 border-t border-border py-3.5 first:border-t-0">
+      <div className="flex items-center gap-3">
+        <span className="tabular-data w-5 shrink-0 text-xs font-medium text-muted-foreground">
+          {String(index).padStart(2, "0")}
+        </span>
+        <div className="flex flex-1 items-baseline justify-between gap-3">
+          <span className={cn("text-sm font-medium", item.done && "text-fat")}>{item.label}</span>
+          <span className="tabular-data text-sm text-muted-foreground">{item.detail}</span>
+        </div>
+        {item.done ? (
           <Check className="size-4 shrink-0 text-fat" strokeWidth={2.5} />
         ) : (
-          <Circle className="size-4 shrink-0 text-muted-foreground" strokeWidth={2} />
+          <span className="size-4 shrink-0" aria-hidden="true" />
         )}
-        <div className="flex flex-1 items-baseline justify-between">
-          <span className={cn("text-sm font-medium", done && "text-fat")}>{label}</span>
-          <span className="tabular-data text-xs text-muted-foreground">{detail}</span>
-        </div>
       </div>
-      {children}
+      {item.children && <div className="pl-8">{item.children}</div>}
     </div>
   );
 }
@@ -48,13 +48,6 @@ export function DailyChecklist({ data }: { data: DailyChecklistData }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [sleepInput, setSleepInput] = useState(data.sleepHours?.toString() ?? "");
-
-  function handleAddWater(ml: number) {
-    startTransition(async () => {
-      await addWater(ml);
-      router.refresh();
-    });
-  }
 
   function handleLogSleep() {
     const hours = Number(sleepInput);
@@ -77,122 +70,86 @@ export function DailyChecklist({ data }: { data: DailyChecklistData }) {
   const stepsDone = data.steps !== null && data.steps >= data.stepsTarget;
   const sleepDone = data.sleepHours !== null && data.sleepHours >= data.sleepTargetHours;
 
-  const totalItems = 5;
-  const completeCount = [
-    data.workoutCompleted,
-    mealsDone,
-    waterDone,
-    stepsDone,
-    sleepDone,
-  ].filter(Boolean).length;
+  const items: ChecklistItem[] = [
+    {
+      label: "Workout",
+      done: data.workoutCompleted,
+      detail: data.workoutCompleted ? "Done" : "—",
+    },
+    {
+      label: "Meals",
+      done: mealsDone,
+      detail: `${data.mealsLoggedCount} / 3`,
+    },
+    {
+      label: "Water",
+      done: waterDone,
+      detail: `${(data.waterMl / 1000).toFixed(1)} / ${(data.waterTargetMl / 1000).toFixed(1)} L`,
+    },
+    {
+      label: "Steps",
+      done: stepsDone,
+      detail: data.steps !== null ? data.steps.toLocaleString() : "—",
+    },
+    {
+      label: "Sleep",
+      done: sleepDone,
+      detail: data.sleepHours !== null ? `${data.sleepHours}h` : `${data.sleepTargetHours}h target`,
+      children: (
+        <div className="flex items-center gap-2">
+          <Input
+            type="number"
+            step="0.5"
+            inputMode="decimal"
+            placeholder="Hours"
+            aria-label="Sleep hours"
+            value={sleepInput}
+            onChange={(e) => setSleepInput(e.target.value)}
+            className="h-9 w-20 px-2 text-sm"
+          />
+          <Button size="sm" variant="outline" disabled={isPending || !sleepInput} onClick={handleLogSleep}>
+            Log
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  const completeCount = items.filter((item) => item.done).length;
 
   return (
-    <div className="flex flex-col gap-3">
-      <Card elevated>
-        <CardContent className="flex flex-col gap-3">
-          <div className="flex items-baseline justify-between">
-            <p className="font-display text-xl font-semibold tracking-tight">
-              {completeCount} of {totalItems} complete
-            </p>
-            <span className="tabular-data text-sm text-muted-foreground">
-              {Math.round((completeCount / totalItems) * 100)}%
-            </span>
-          </div>
-          <Progress value={completeCount / totalItems} tone="fat" />
-
-          <div className="flex flex-col">
-            <ChecklistRow
-              done={data.workoutCompleted}
-              label="Workout"
-              detail={data.workoutCompleted ? "Done" : "Not yet"}
-            />
-            <ChecklistRow
-              done={mealsDone}
-              label="Meals logged"
-              detail={`${data.mealsLoggedCount}/3`}
-            />
-            <ChecklistRow
-              done={waterDone}
-              label="Water"
-              detail={`${(data.waterMl / 1000).toFixed(1)}L / ${(data.waterTargetMl / 1000).toFixed(1)}L`}
-            >
-              <div className="ml-6.5 flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={isPending}
-                  onClick={() => handleAddWater(250)}
-                >
-                  +250ml
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={isPending}
-                  onClick={() => handleAddWater(500)}
-                >
-                  +500ml
-                </Button>
-              </div>
-            </ChecklistRow>
-            <ChecklistRow
-              done={stepsDone}
-              label="Steps"
-              detail={
-                data.steps !== null
-                  ? `${data.steps.toLocaleString()} / ${data.stepsTarget.toLocaleString()}`
-                  : "Not synced yet"
-              }
-            />
-            <ChecklistRow
-              done={sleepDone}
-              label="Sleep"
-              detail={
-                data.sleepHours !== null
-                  ? `${data.sleepHours}h / ${data.sleepTargetHours}h`
-                  : `Target ${data.sleepTargetHours}h`
-              }
-            >
-              <div className="ml-6.5 flex items-center gap-2">
-                <Input
-                  type="number"
-                  step="0.5"
-                  inputMode="decimal"
-                  placeholder="Hours"
-                  aria-label="Sleep hours"
-                  value={sleepInput}
-                  onChange={(e) => setSleepInput(e.target.value)}
-                  className="h-9 w-20 px-2 text-sm"
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={isPending || !sleepInput}
-                  onClick={handleLogSleep}
-                >
-                  Log
-                </Button>
-              </div>
-            </ChecklistRow>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col">
+        <div className="flex items-baseline justify-between pb-1">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Today&apos;s checklist
+          </p>
+          <span className="tabular-data text-xs text-muted-foreground">
+            {completeCount} / {items.length}
+          </span>
+        </div>
+        {items.map((item, i) => (
+          <ChecklistRow key={item.label} index={i + 1} item={item} />
+        ))}
+      </div>
 
       {data.supplements.length > 0 && (
-        <Card>
-          <CardContent className="flex flex-col gap-2">
-            <p className="text-sm font-medium">Supplements</p>
+        <div className="flex flex-col gap-1">
+          <p className="pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Supplements
+          </p>
+          <div className="flex flex-col">
             {data.supplements.map((s) => (
               <button
                 key={s.id}
                 onClick={() => handleToggleSupplement(s.id, s.taken)}
                 disabled={isPending}
-                className="flex min-h-11 items-center gap-2.5 rounded-md text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="flex min-h-11 items-center gap-2.5 border-t border-border py-2.5 text-left outline-none first:border-t-0 focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
                 {s.taken ? (
                   <Check className="size-4 shrink-0 text-fat" strokeWidth={2.5} />
                 ) : (
-                  <Circle className="size-4 shrink-0 text-muted-foreground" strokeWidth={2} />
+                  <span className="size-4 shrink-0 rounded-full border border-border" aria-hidden="true" />
                 )}
                 <span className={cn("text-sm", s.taken ? "text-fat" : "text-foreground")}>
                   {s.name}
@@ -200,8 +157,8 @@ export function DailyChecklist({ data }: { data: DailyChecklistData }) {
                 </span>
               </button>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
     </div>
   );

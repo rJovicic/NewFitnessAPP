@@ -84,21 +84,36 @@ you're about to seed into the database):
 Derived from the reference screenshots provided at project start (calorie-ring dashboards,
 pastel stat cards, bottom tab nav, day-strip selectors). Direction:
 
-- **Aesthetic:** clean modern health/wellness app. Light theme. Soft, semantic pastel
-  colors per data type (not one generic purple gradient) — e.g. distinct hues for
-  calories, protein, carbs, fat, water, steps. Since the redesign (see session log), the
-  hue lives on the metric card's *surface* (`bg-{metric}-soft` tokens in
-  `app/globals.css`), not just an icon/ring accent — `components/fitness/metric-card.tsx`
-  is the shared primitive for this.
-- **Layout:** the calorie ring and macro bars are fused into one hero surface
-  (`components/calorie-hero.tsx`), not a ring plus a separate macros card. Bottom nav is
-  a floating pill (`components/bottom-nav.tsx`) with 4 primary tabs (Home / Log / Train /
-  Progress) — Mood and Settings live in a "More" sheet rather than crowding the primary
-  bar; `lib/nav-config.ts` still drives both via a `primary: boolean` flag, so it's still
-  the one place a new nav entry goes. Horizontal day-strip (now pill-styled) for date
+- **Aesthetic (art-direction pass, see session log):** "premium personal performance
+  journal" — calm, editorial, understated — not a generic AI-dashboard. The structural
+  rule: `Card` is reserved for the one or two genuinely important hero/interactive
+  surfaces per screen; most information sits directly on the page, separated by
+  typography, whitespace and thin dividers (`border-t`/`divide-y`), not by wrapping it in
+  another rounded rectangle. Section labels (`text-xs uppercase tracking-wide
+  text-muted-foreground` — "TODAY", "THIS WEEK", "MEAL 1") are the primary structural
+  device that replaced most of the old per-metric pastel tiles. Semantic per-metric
+  pastel (`bg-{metric}-soft` tokens, `components/fitness/metric-card.tsx`) still exists
+  but is now an occasional accent (progress-insight callouts, GF-adjacent surfaces), not
+  the default treatment for ordinary stats.
+- **Typography hierarchy:** the big "how am I doing" numbers (calories eaten, current
+  weight) use `font-display` (Space Grotesk) at hero scale, not mono — `tabular-data`
+  (IBM Plex Mono) is reserved for genuinely technical readouts where digit-width
+  stability matters (rest/workout timers, set/rep counters, macro grams inline in a row).
+- **Radius hierarchy** (`app/globals.css`): `--radius-control` (10px, inputs/steppers) →
+  `--radius-button` (14px, every button) → `--radius-container` (18px, ordinary
+  containers — `Card`'s default) → `--radius-hero` (26px, hero-only — calorie hero,
+  weight hero, opted into explicitly via `className="rounded-xl"`).
+- **Layout:** the calorie hero (`components/calorie-hero.tsx`) is a large `EATEN` number
+  + thin progress rule + target/remaining pair + macro rows — not a circular ring
+  (the old `CalorieRing` component was retired). Bottom nav is a floating pill
+  (`components/bottom-nav.tsx`) with 4 primary tabs (Home / Log / Train / Progress) —
+  Mood and Settings live in a "More" sheet rather than crowding the primary bar;
+  `lib/nav-config.ts` still drives both via a `primary: boolean` flag, so it's still
+  the one place a new nav entry goes. Horizontal day-strip (pill-styled) for date
   selection.
 - **Explicitly avoid:** default "Inter font + purple gradient + rounded card" AI-generated
-  look. Pick an actual typography pairing and commit to it.
+  look, and — per the art-direction pass — "card → card → card" composition, uniform
+  giant border-radius on every container, and pastel-tile-as-default-surface.
 - **Mobile is the only target for MVP.** Design and test at a 390×844 viewport
   (iPhone 14/15 class). Desktop can degrade gracefully later — don't spend budget on
   desktop layouts now.
@@ -710,3 +725,63 @@ don't add a URL prefix — confirmed true in practice. The auth boundary is ther
   rendering it. Real-device verification (the master prompt's own Phase 6/QA ask) is
   still outstanding. Committed and pushed to `claude/fitness-app-ui-ux-redesign-kvsj7w`;
   no PR opened (not requested).
+- `2026-09-02` — PR #6 (both entries above) merged to `main`, user asked to push live —
+  merged via GitHub MCP, Vercel's git integration built and aliased production
+  automatically (green Vercel check on the PR pre-merge). Vercel MCP itself was flaky
+  post-merge (`list_projects` empty, `web_fetch_vercel_url` failing) so live production
+  wasn't independently re-verified from this sandbox; user asked to eyeball the phone.
+  **Same session, immediately after:** a full **visual identity / art-direction pass**
+  (explicit new master prompt — "too generic, looks like an AI-generated wellness
+  dashboard"). Branch restarted from `origin/main` first (prior PR was merged, per the
+  branch-reuse rule) before any new commits. This was a pure visual/structural pass —
+  no business logic, Supabase queries, RLS, GF safety logic, macro calc, workout
+  progression, or tile-registry.tsx changed. **Core principle applied:** `Card` is now
+  reserved for one or two genuine hero surfaces per screen; most information sits
+  directly on the page separated by typography/whitespace/thin dividers instead of being
+  wrapped in another rounded rectangle — see the new art-direction note atop
+  `app/globals.css` and the updated §4 above for the full system (4-tier radius
+  hierarchy, typography scale, when mono vs. display type applies). **Home (the biggest
+  change):** `CalorieRing` retired (file deleted) — `components/calorie-hero.tsx` is now
+  an editorial big-number treatment (huge `EATEN` figure in `font-display`, thin
+  progress rule, `TARGET`/`REMAINING` pair, macro rows). The 7-tile pastel grid is gone:
+  each tile component (`WaterTile`, `StepsTile`, `StreakTile`, `MoodTile`,
+  `WeeklySummaryTile`, `ProgramProgressTile`, `FastingTile`) now renders bare
+  label/value content instead of wrapping itself in `MetricCard`, and
+  `app/(dashboard)/page.tsx` composes them into two plain sections ("Today" —
+  water+steps; "This week" — program-progress header, a streak/mood/training/meals
+  quad, fasting) via `Array.find()` by id — the registry array itself is untouched, and
+  any *unnamed* future tile still auto-renders in a fallback grid at the end, so the
+  CLAUDE.md §7 "one entry = it shows up" guarantee holds. `WeeklySummaryTile` shows
+  training/meals as "days-hit / days-elapsed-this-week" rather than fabricating a
+  "/3" weekly target the program data doesn't actually define anywhere. `DailyChecklist`
+  dropped its `Card` wrapper for a numbered (01–05) ritual list with thin dividers;
+  water's quick-add buttons moved out of the checklist into the dedicated "Today"
+  section to avoid duplicating the same control in two places. **Train:** the
+  exercise-overview list dropped its outer bordered box for a plain divide-y list with
+  more editorial spacing per row (name prominent, muscle group below, reps/sets
+  right-aligned); active-exercise reps target promoted from muted caption to a real
+  body-weight line. **Log:** meal-slot headers now lead with the time (tabular, small)
+  above an uppercase section-label meal name, matching the section-label convention used
+  everywhere else. **Progress:** the weight hero's big number switched from
+  `tabular-data` mono to `font-display` (matches the "major numbers use display type,
+  not mono" rule) and grew to hero scale, matching the calorie hero. **Mood:** each
+  emoji now carries a text label (Rough/Low/Okay/Good/Great, cosmetic-only, no schema
+  change) shown on selection, matching the master prompt's "🙂 Good" framing — purely
+  presentational, `logMood`'s 1–5 value contract untouched. **Settings:** already close
+  to the "boring in a good way, sectioned rows" ask from the prior polish pass — left
+  materially as-is. **Bottom nav:** deliberately untouched per the prompt's own
+  instruction to keep it. **GF safety:** `gf-badge.tsx`/`gf-disclaimer.tsx` not touched
+  at all this pass — still the exact three-state icon+text treatment, never a filled
+  badge/pill. **Correctness fix caught in passing:** the calorie hero and the new "Today"
+  water/steps section both said "Today" unconditionally regardless of which day the
+  day-strip was viewing (a latent bug predating this pass, in text this pass was already
+  touching) — now conditional on `data.isToday` / `isToday`. **Verification:** `npm run
+  lint` and `npm run build` clean, re-run after every batch of changes. **Not verified —
+  same constraint as every prior session:** no real Supabase credentials, `*.vercel.app`
+  blocked by the egress proxy (confirmed again via direct curl, 403), no `playwright`
+  binary in `node_modules/.bin` — no live render, no device screenshots at any of the
+  four requested viewports. This is a code-complete, build-clean, lint-clean pass
+  verified by reading the resulting code, not by rendering it — real-device visual QA
+  against the actual iPhone screenshots the prompt asked for is still outstanding.
+  Committed and pushed to `claude/fitness-app-ui-ux-redesign-kvsj7w`; no PR opened yet
+  (not requested this round).

@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardLoading() {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-1 px-4 pt-6 pb-2">
         <Skeleton className="h-7 w-48" />
         <Skeleton className="h-4 w-36" />
@@ -14,8 +14,9 @@ export default function DashboardLoading() {
         ))}
       </div>
 
-      <div className="mx-4 rounded-xl border border-border p-5">
-        <Skeleton className="mx-auto size-[208px] rounded-full" />
+      <div className="mx-4 rounded-xl border border-border p-6">
+        <Skeleton className="h-16 w-40" />
+        <Skeleton className="mt-4 h-1 w-full" />
         <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4">
           <Skeleton className="h-8 w-full" />
           <Skeleton className="h-8 w-full" />
@@ -23,15 +24,14 @@ export default function DashboardLoading() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 px-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 rounded-xl" />
-        ))}
+      <div className="flex flex-col gap-2 px-4">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-10 w-full" />
       </div>
 
-      <div className="flex flex-col gap-3 px-4">
+      <div className="flex flex-col gap-2 px-4">
         <Skeleton className="h-5 w-40" />
-        <Skeleton className="h-64 rounded-xl" />
+        <Skeleton className="h-64 w-full" />
       </div>
     </div>
   );

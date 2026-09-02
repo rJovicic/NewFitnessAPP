@@ -2,13 +2,13 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Droplet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { MetricCard } from "@/components/fitness/metric-card";
 import type { DashboardData } from "@/lib/dashboard-data";
 import { addWater } from "@/app/(dashboard)/checklist-actions";
 
+// Bare content, no card — composed by the Home page into the "Today"
+// data section alongside StepsTile. See globals.css's art-direction note.
 export function WaterTile({ data }: { data: DashboardData }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -24,39 +24,36 @@ export function WaterTile({ data }: { data: DashboardData }) {
   }
 
   return (
-    <MetricCard
-      tone="water"
-      icon={Droplet}
-      label="Water"
-      value={liters}
-      unit={`/ ${targetLiters}L`}
-      footer={
-        <div className="flex flex-col gap-2">
-          <Progress value={fraction} tone="water" />
-          {data.isToday && (
-            <div className="flex gap-1.5">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-9 flex-1 border-water/25 bg-card/70 px-1 text-xs hover:bg-card"
-                disabled={isPending}
-                onClick={() => handleAddWater(250)}
-              >
-                +250ml
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-9 flex-1 border-water/25 bg-card/70 px-1 text-xs hover:bg-card"
-                disabled={isPending}
-                onClick={() => handleAddWater(500)}
-              >
-                +500ml
-              </Button>
-            </div>
-          )}
+    <div className="flex flex-col gap-2 py-3.5">
+      <div className="flex items-baseline justify-between">
+        <span className="text-sm font-medium">Water</span>
+        <span className="tabular-data text-sm text-muted-foreground">
+          {liters} / {targetLiters} L
+        </span>
+      </div>
+      <Progress value={fraction} tone="water" trackClassName="h-1" />
+      {data.isToday && (
+        <div className="flex gap-2 pt-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            disabled={isPending}
+            onClick={() => handleAddWater(250)}
+          >
+            +250 ml
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1"
+            disabled={isPending}
+            onClick={() => handleAddWater(500)}
+          >
+            +500 ml
+          </Button>
         </div>
-      }
-    />
+      )}
+    </div>
   );
 }

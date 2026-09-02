@@ -2,16 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logMood } from "@/app/(dashboard)/mood/actions";
 
 const MOODS = [
-  { value: 1, emoji: "😞" },
-  { value: 2, emoji: "😕" },
-  { value: 3, emoji: "😐" },
-  { value: 4, emoji: "🙂" },
-  { value: 5, emoji: "😄" },
+  { value: 1, emoji: "😞", label: "Rough" },
+  { value: 2, emoji: "😕", label: "Low" },
+  { value: 3, emoji: "😐", label: "Okay" },
+  { value: 4, emoji: "🙂", label: "Good" },
+  { value: 5, emoji: "😄", label: "Great" },
 ] as const;
 
 export function MoodLogger({ initialMood }: { initialMood: number | null }) {
@@ -29,15 +28,17 @@ export function MoodLogger({ initialMood }: { initialMood: number | null }) {
     });
   }
 
+  const savedMood = MOODS.find((m) => m.value === saved);
+
   return (
-    <div className="flex flex-col items-center gap-5">
+    <div className="flex flex-col items-center gap-6">
       <div className="flex gap-2">
         {MOODS.map((m) => (
           <button
             key={m.value}
             type="button"
             disabled={isPending}
-            aria-label={`Mood ${m.value} out of 5`}
+            aria-label={`Mood ${m.value} out of 5 — ${m.label}`}
             aria-pressed={saved === m.value}
             onClick={() => handleLog(m.value)}
             className={cn(
@@ -51,9 +52,10 @@ export function MoodLogger({ initialMood }: { initialMood: number | null }) {
           </button>
         ))}
       </div>
-      {saved !== null && (
-        <p className="flex items-center gap-1.5 text-sm font-medium text-fat">
-          <Check className="size-4" strokeWidth={2.5} /> Logged today: {saved}/5
+      {savedMood && (
+        <p className="flex items-center gap-2 text-base font-medium">
+          <span aria-hidden="true">{savedMood.emoji}</span>
+          {savedMood.label}
         </p>
       )}
     </div>

@@ -1,33 +1,26 @@
-import { Target } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
-import { MetricCard } from "@/components/fitness/metric-card";
 import { getProgramProgress } from "@/app/(dashboard)/program-progress/actions";
 
 // Self-contained: fetches its own data, so wiring this in touched only
-// lib/tile-registry.tsx, per the CLAUDE.md §7 extension pattern.
+// lib/tile-registry.tsx, per the CLAUDE.md §7 extension pattern. Reads
+// as the header of Home's "This week" section: WEEK N -> big kg-to-go
+// figure -> TO GOAL — no card, no ring.
 export async function ProgramProgressTile() {
   const progress = await getProgramProgress();
   if (!progress) return null;
 
   return (
-    <MetricCard
-      tone="protein"
-      icon={Target}
-      label="Program progress"
-      value={`Week ${progress.weekNumber}`}
-      unit={`/ ~${progress.totalWeeks}`}
-      footer={
-        <div className="flex flex-col gap-1.5">
-          <Progress value={progress.percentToGoal / 100} tone="protein" />
-          <p className="text-xs text-muted-foreground">
-            {progress.weightLostKg > 0 ? `${progress.weightLostKg}kg lost` : "Just started"}
-            {" · "}
-            {progress.weightRemainingKg > 0
-              ? `${progress.weightRemainingKg}kg to goal`
-              : "At goal weight"}
-          </p>
-        </div>
-      }
-    />
+    <div className="flex flex-col gap-1">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        Week {progress.weekNumber}
+      </p>
+      <p className="font-display text-3xl font-semibold tracking-tight">
+        {progress.weightRemainingKg > 0 ? `${progress.weightRemainingKg} kg` : "Goal reached"}
+      </p>
+      {progress.weightRemainingKg > 0 && (
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          To goal
+        </p>
+      )}
+    </div>
   );
 }

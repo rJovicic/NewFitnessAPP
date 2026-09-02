@@ -2,7 +2,6 @@ import { getDashboardData } from "@/lib/dashboard-data";
 import { dashboardTiles } from "@/lib/tile-registry";
 import { APP_TIMEZONE, currentHourInAppTimezone, todayInAppTimezone } from "@/lib/timezone";
 import { PageHeader } from "@/components/fitness/page-header";
-import { SectionHeader } from "@/components/fitness/section-header";
 import { DayStrip } from "@/components/day-strip";
 import { CalorieHero } from "@/components/calorie-hero";
 import { DailyChecklist } from "@/components/daily-checklist";
@@ -10,14 +9,25 @@ import { getDailyChecklist } from "./checklist-actions";
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-// Only the two metrics with an explicit daily target (water, steps) sit in
-// the primary grid directly under the hero — streak/mood/weekly-summary/
-// program-progress/fasting are reflective or derived rather than "today's
-// numbers," so they read as secondary, below the checklist. Everything
-// not listed here lands in the secondary group by default, so a newly
-// registered tile still shows up without this file knowing about it. See
-// lib/tile-registry.tsx.
-const PRIMARY_METRIC_IDS = new Set(["water", "steps"]);
+// The Home layout composes specific tiles by id into a deliberate
+// editorial arrangement (see globals.css's art-direction note) rather
+// than looping the registry into a generic card grid. Anything NOT named
+// here still renders automatically at the end — so a tile registered
+// later (CLAUDE.md §7) is never silently dropped, it just lands in a
+// plain fallback section instead of a hand-placed one.
+const NAMED_TILE_IDS = new Set([
+  "water",
+  "steps",
+  "streak",
+  "mood",
+  "weekly-summary",
+  "program-progress",
+  "fasting",
+]);
+
+function tileById(id: string) {
+  return dashboardTiles.find((tile) => tile.id === id);
+}
 
 function greetingFor(hour: number) {
   if (hour < 5) return "Good night";
@@ -59,38 +69,62 @@ export default async function DashboardHome({
   });
   const firstName = data.fullName.split(" ")[0];
 
-  const metricTiles = dashboardTiles.filter((tile) => PRIMARY_METRIC_IDS.has(tile.id));
-  const summaryTiles = dashboardTiles.filter((tile) => !PRIMARY_METRIC_IDS.has(tile.id));
+  const waterTile = tileById("water");
+  const stepsTile = tileById("steps");
+  const streakTile = tileById("streak");
+  const moodTile = tileById("mood");
+  const weeklySummaryTile = tileById("weekly-summary");
+  const programProgressTile = tileById("program-progress");
+  const fastingTile = tileById("fasting");
+  const otherTiles = dashboardTiles.filter((tile) => !NAMED_TILE_IDS.has(tile.id));
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <PageHeader title={`${greeting}, ${firstName}`} subtitle={dateLabel} />
       <DayStrip selectedDate={selectedDate} todayDate={todayDate} />
 
       <CalorieHero data={data} />
 
-      <div className="grid grid-cols-2 gap-3 px-4">
-        {metricTiles.map((tile) => (
-          <div key={tile.id} className={tile.span === "full" ? "col-span-2" : ""}>
-            {tile.render(data)}
-          </div>
-        ))}
-      </div>
-
-      {isToday && checklist && (
-        <div className="flex flex-col gap-3 px-4">
-          <SectionHeader title="Today's checklist" />
-          <DailyChecklist data={checklist} />
-        </div>
+      {(waterTile || stepsTile) && (
+        <section className="flex flex-col px-4">
+          {isToday && (
+            <p className="pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Today
+            </p>
+          )}
+          {waterTile?.render(data)}
+          {stepsTile?.render(data)}
+        </section>
       )}
 
-      <div className="grid grid-cols-2 gap-3 px-4">
-        {summaryTiles.map((tile) => (
-          <div key={tile.id} className={tile.span === "full" ? "col-span-2" : ""}>
-            {tile.render(data)}
-          </div>
-        ))}
-      </div>
+      {isToday && checklist && (
+        <section className="px-4">
+          <DailyChecklist data={checklist} />
+        </section>
+      )}
+
+      <section className="flex flex-col px-4">
+        <p className="pb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          This week
+        </p>
+        {programProgressTile?.render(data)}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-4 mt-4">
+          {streakTile?.render(data)}
+          {moodTile?.render(data)}
+          {weeklySummaryTile?.render(data)}
+        </div>
+        <div className="border-t border-border">{fastingTile?.render(data)}</div>
+      </section>
+
+      {otherTiles.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 px-4">
+          {otherTiles.map((tile) => (
+            <div key={tile.id} className={tile.span === "full" ? "col-span-2" : ""}>
+              {tile.render(data)}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
