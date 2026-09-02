@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { DashboardData } from "@/lib/dashboard-data";
-import { MacrosTile } from "@/components/tiles/macros-tile";
 import { WaterTile } from "@/components/tiles/water-tile";
+import { StepsTile } from "@/components/tiles/steps-tile";
 import { StreakTile } from "@/components/tiles/streak-tile";
 import { FastingTile } from "@/components/tiles/fasting-tile";
 import { MoodTile } from "@/components/tiles/mood-tile";
@@ -16,9 +16,12 @@ export interface DashboardTile {
 
 // The extension point Phase 9 proves out: adding a tile later is one
 // entry here, not a rewrite of the dashboard layout — see CLAUDE.md §7.
+// The calorie ring + macro bars are the one deliberate exception: they're
+// fused into <CalorieHero> as the dashboard's signature surface (CLAUDE.md
+// §16) and rendered directly by the Home page, not from this registry.
 export const dashboardTiles: DashboardTile[] = [
-  { id: "macros", span: "full", render: (data) => <MacrosTile data={data} /> },
   { id: "water", span: "half", render: (data) => <WaterTile data={data} /> },
+  { id: "steps", span: "half", render: (data) => <StepsTile data={data} /> },
   { id: "streak", span: "half", render: (data) => <StreakTile streak={data.streak} /> },
   { id: "mood", span: "half", render: () => <MoodTile /> },
   { id: "weekly-summary", span: "half", render: () => <WeeklySummaryTile /> },

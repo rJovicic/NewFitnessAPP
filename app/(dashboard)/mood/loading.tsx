@@ -1,12 +1,18 @@
+import { Skeleton } from "@/components/ui/skeleton";
+
 export default function MoodLoading() {
   return (
-    <div className="flex animate-pulse flex-col items-center gap-6 px-4 py-12">
-      <div className="size-8 rounded-full bg-muted" />
-      <div className="h-5 w-32 rounded bg-muted" />
-      <div className="flex gap-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="size-10 rounded-md bg-muted" />
-        ))}
+    <div className="flex flex-col">
+      <div className="flex flex-col gap-1 px-4 pt-6 pb-2">
+        <Skeleton className="h-7 w-56" />
+        <Skeleton className="h-4 w-48" />
+      </div>
+      <div className="flex flex-col items-center gap-6 px-4 py-10">
+        <div className="flex gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="size-14 rounded-full" />
+          ))}
+        </div>
       </div>
     </div>
   );

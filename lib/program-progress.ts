@@ -12,6 +12,7 @@ export interface ProgramProgress {
   percentToGoal: number; // 0-100, clamped
   projectedEndDate: string; // YYYY-MM-DD
   daysRemaining: number;
+  daysElapsed: number;
 }
 
 export function computeProgramProgress(
@@ -49,5 +50,6 @@ export function computeProgramProgress(
     percentToGoal: Math.round(percentToGoal),
     projectedEndDate: end.toISOString().slice(0, 10),
     daysRemaining,
+    daysElapsed,
   };
 }

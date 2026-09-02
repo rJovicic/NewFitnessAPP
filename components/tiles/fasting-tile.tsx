@@ -38,9 +38,15 @@ export function FastingTile({
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    setNow(new Date());
+    // Client-only mount: setting state directly in the effect body (rather
+    // than in a callback) trips react-hooks/set-state-in-effect, so the
+    // first tick goes through rAF like CalorieRing's mount animation does.
+    const frame = requestAnimationFrame(() => setNow(new Date()));
     const id = setInterval(() => setNow(new Date()), 30_000);
-    return () => clearInterval(id);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearInterval(id);
+    };
   }, []);
 
   if (!now) {

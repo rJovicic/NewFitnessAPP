@@ -70,6 +70,19 @@ export function zonedTimeToUtc(dateStr: string, timeStr: string): Date {
   return new Date(guessUtc.getTime() - offsetMinutes * 60_000);
 }
 
+/**
+ * Calendar date string (YYYY-MM-DD) `days` before today, computed in
+ * APP_TIMEZONE. Pure calendar-day subtraction anchored to the app's fixed
+ * timezone — safe to call from a client component since it never touches
+ * the viewer's own local clock/timezone, only re-derives "today" via
+ * todayInAppTimezone() and subtracts whole days from that.
+ */
+export function dateNDaysAgoInAppTimezone(days: number, referenceDate: Date = new Date()): string {
+  const todayStr = todayInAppTimezone(referenceDate);
+  const [y, m, d] = todayStr.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d - days)).toISOString().slice(0, 10);
+}
+
 /** Monday-first weekday index (0-6) for a YYYY-MM-DD date string. */
 export function weekdayIndex(dateStr: string): number {
   const d = new Date(`${dateStr}T00:00:00Z`);

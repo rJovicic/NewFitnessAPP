@@ -9,10 +9,17 @@
  * Space Grotesk (display/numerals, tabular figures for the calorie ring)
  * + IBM Plex Sans (body/labels) + IBM Plex Mono (data readouts) — a
  * deliberate pairing, not the Inter default.
+ *
+ * Surface/radius/shadow hierarchy (redesign pass): most surfaces are flat
+ * (border, no shadow) — elevation is reserved for things that are
+ * genuinely "above" the page (hero, floating nav, sheets, dialogs), per
+ * the "not a stack of floating white rectangles" brief.
  */
 
 :root {
-  --radius: 0.75rem;
+  --radius: 1rem;
+  --radius-control: 0.625rem;
+  --radius-hero: 1.375rem;
 
   --background: #fbf9f6;
   --foreground: #1e2321;
@@ -33,20 +40,40 @@
   --input: #e8e3da;
   --ring: #c9c2b4;
 
-  /* Semantic per-metric hues */
+  /* Surface tiers beyond the shadcn base pair above */
+  --surface-sunken: #f5f2ec;
+  --surface-overlay: rgb(30 35 33 / 45%);
+  --surface-sheet: #fffefc;
+
+  /* Semantic per-metric hues (accents: icons, fills, text-on-tint) */
   --calories: #ea7b54;
   --protein: #c15c74;
   --carbs: #dda43a;
   --fat: #8fa377;
   --water: #6c93a6;
   --steps: #8b7a9e;
+
+  /* Same hues, desaturated into soft tinted surfaces for metric cards */
+  --calories-soft: #fbeade;
+  --protein-soft: #f8e6ea;
+  --carbs-soft: #faf1d9;
+  --fat-soft: #ebf1e4;
+  --water-soft: #e5eef3;
+  --steps-soft: #ede8f3;
+
+  /* Elevation ladder — reserved for hero / floating nav / sheet / dialog */
+  --shadow-hero: 0 1px 2px rgb(30 35 33 / 5%), 0 8px 24px -8px rgb(30 35 33 / 10%);
+  --shadow-nav: 0 4px 10px rgb(30 35 33 / 6%), 0 12px 28px -8px rgb(30 35 33 / 16%);
+  --shadow-sheet: 0 -4px 12px rgb(30 35 33 / 6%), 0 -16px 40px -12px rgb(30 35 33 / 20%);
+  --shadow-dialog: 0 24px 64px -12px rgb(30 35 33 / 30%);
 }
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: var(--radius-control);
+  --radius-md: calc(var(--radius-control) + 2px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: var(--radius-hero);
+  --radius-2xl: calc(var(--radius-hero) + 6px);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -67,12 +94,23 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-sheet: var(--surface-sheet);
+  --color-surface-overlay: var(--surface-overlay);
+
   --color-calories: var(--calories);
   --color-protein: var(--protein);
   --color-carbs: var(--carbs);
   --color-fat: var(--fat);
   --color-water: var(--water);
   --color-steps: var(--steps);
+
+  --color-calories-soft: var(--calories-soft);
+  --color-protein-soft: var(--protein-soft);
+  --color-carbs-soft: var(--carbs-soft);
+  --color-fat-soft: var(--fat-soft);
+  --color-water-soft: var(--water-soft);
+  --color-steps-soft: var(--steps-soft);
 
   --font-display: var(--font-display);
   --font-sans: var(--font-body);
@@ -92,5 +130,35 @@
   .tabular-data {
     font-family: var(--font-data);
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Elevation ladder as utilities — reach for these deliberately, not by
+     default, per the "most surfaces are flat" rule above. */
+  .shadow-hero {
+    box-shadow: var(--shadow-hero);
+  }
+  .shadow-nav {
+    box-shadow: var(--shadow-nav);
+  }
+  .shadow-sheet {
+    box-shadow: var(--shadow-sheet);
+  }
+  .shadow-dialog {
+    box-shadow: var(--shadow-dialog);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

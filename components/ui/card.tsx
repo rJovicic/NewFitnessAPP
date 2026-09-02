@@ -1,12 +1,17 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+function Card({
+  className,
+  elevated = false,
+  ...props
+}: React.ComponentProps<"div"> & { elevated?: boolean }) {
   return (
     <div
       data-slot="card"
       className={cn(
-        "rounded-xl border border-border bg-card text-card-foreground shadow-sm",
+        "rounded-xl border border-border bg-card text-card-foreground",
+        elevated ? "border-transparent shadow-hero" : "shadow-none",
         className
       )}
       {...props}

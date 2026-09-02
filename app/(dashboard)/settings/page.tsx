@@ -1,10 +1,34 @@
 import Link from "next/link";
+import { Camera, Smartphone } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/fitness/page-header";
 import { addonRegistry } from "@/lib/addon-registry";
+import { getDashboardData } from "@/lib/dashboard-data";
+import { todayInAppTimezone } from "@/lib/timezone";
 import { updateFastingWindow } from "./actions";
+
+function SettingsSection({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <Card className="overflow-hidden">
+        <div className="flex flex-col divide-y divide-border">{children}</div>
+      </Card>
+    </div>
+  );
+}
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -12,80 +36,129 @@ export default async function SettingsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: profile } = user
-    ? await supabase
-        .from("profiles")
-        .select("eating_window_start, eating_window_end")
-        .eq("id", user.id)
-        .single()
-    : { data: null };
+  const [{ data: profile }, dashboardData] = await Promise.all([
+    user
+      ? supabase
+          .from("profiles")
+          .select("eating_window_start, eating_window_end")
+          .eq("id", user.id)
+          .single()
+      : Promise.resolve({ data: null }),
+    getDashboardData(todayInAppTimezone()),
+  ]);
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4">
-      <Card>
-        <CardContent className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium">Account</p>
-            <p className="text-sm text-muted-foreground">{user?.email}</p>
+    <div className="flex flex-col">
+      <PageHeader title="Settings" />
+      <div className="flex flex-col gap-6 px-4 py-4">
+        <SettingsSection label="Account">
+          <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+            <div>
+              <p className="text-sm font-medium">Account</p>
+              <p className="text-xs text-muted-foreground">{user?.email}</p>
+            </div>
+            <SignOutButton />
           </div>
-          <SignOutButton />
-        </CardContent>
-      </Card>
+        </SettingsSection>
 
-      <Card>
-        <CardContent className="flex flex-col gap-3">
-          <p className="text-sm font-medium">Fasting window</p>
-          <p className="text-xs text-muted-foreground">
-            Your daily eating window. Adjust it if your schedule shifts.
-          </p>
-          <form action={updateFastingWindow} className="flex items-end gap-3">
-            <div className="flex flex-1 flex-col gap-1.5">
-              <label htmlFor="eating_window_start" className="text-xs text-muted-foreground">
-                Opens
-              </label>
-              <input
-                id="eating_window_start"
-                name="eating_window_start"
-                type="time"
-                defaultValue={profile?.eating_window_start?.slice(0, 5) ?? "10:00"}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-              />
+        <SettingsSection label="Plan">
+          <div className="flex flex-col gap-3 px-4 py-3.5">
+            <div>
+              <p className="text-sm font-medium">Fasting window</p>
+              <p className="text-xs text-muted-foreground">
+                Your daily eating window. Adjust it if your schedule shifts.
+              </p>
             </div>
-            <div className="flex flex-1 flex-col gap-1.5">
-              <label htmlFor="eating_window_end" className="text-xs text-muted-foreground">
-                Closes
-              </label>
-              <input
-                id="eating_window_end"
-                name="eating_window_end"
-                type="time"
-                defaultValue={profile?.eating_window_end?.slice(0, 5) ?? "19:30"}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-              />
+            <form action={updateFastingWindow} className="flex items-end gap-3">
+              <div className="flex flex-1 flex-col gap-1.5">
+                <label htmlFor="eating_window_start" className="text-xs text-muted-foreground">
+                  Opens
+                </label>
+                <Input
+                  id="eating_window_start"
+                  name="eating_window_start"
+                  type="time"
+                  defaultValue={profile?.eating_window_start?.slice(0, 5) ?? "10:00"}
+                />
+              </div>
+              <div className="flex flex-1 flex-col gap-1.5">
+                <label htmlFor="eating_window_end" className="text-xs text-muted-foreground">
+                  Closes
+                </label>
+                <Input
+                  id="eating_window_end"
+                  name="eating_window_end"
+                  type="time"
+                  defaultValue={profile?.eating_window_end?.slice(0, 5) ?? "19:30"}
+                />
+              </div>
+              <Button type="submit" size="sm">
+                Save
+              </Button>
+            </form>
+          </div>
+          {dashboardData && (
+            <div className="px-4 py-3.5">
+              <p className="text-sm font-medium">Nutrition targets</p>
+              <p className="text-xs text-muted-foreground">
+                Recalculated live from your latest weigh-in — not editable directly.
+              </p>
+              <p className="tabular-data mt-1.5 text-xs text-muted-foreground">
+                {dashboardData.targets.targetKcal.toLocaleString()} kcal · P
+                {dashboardData.targets.proteinG} C{dashboardData.targets.carbsG} F
+                {dashboardData.targets.fatG}
+              </p>
             </div>
-            <Button type="submit" size="sm">
-              Save
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="flex flex-col gap-2">
-          <p className="text-sm font-medium">Add-ons</p>
-          {addonRegistry.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              No add-ons yet. Approved extras get a line here — nothing to configure until then.
-            </p>
-          ) : (
-            addonRegistry.map((addon) => (
-              <Link key={addon.id} href={addon.href} className="text-sm underline">
-                {addon.label}
-              </Link>
-            ))
           )}
-        </CardContent>
-      </Card>
+        </SettingsSection>
+
+        <SettingsSection label="Data">
+          <Link
+            href="/progress"
+            className="flex min-h-14 items-center gap-3 px-4 py-3.5 hover:bg-muted"
+          >
+            <Camera className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+            <p className="text-sm font-medium">Progress photos</p>
+          </Link>
+          <div className="px-4 py-3.5">
+            <p className="text-sm font-medium">Health data</p>
+            <p className="text-xs text-muted-foreground">
+              Steps and sleep sync automatically once Health Auto Export is configured on your
+              phone — see docs/apple-health-setup.md.
+            </p>
+          </div>
+        </SettingsSection>
+
+        <SettingsSection label="App">
+          <div className="flex items-center gap-3 px-4 py-3.5">
+            <Smartphone className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+            <div>
+              <p className="text-sm font-medium">Install app</p>
+              <p className="text-xs text-muted-foreground">
+                Add to your home screen from your browser&apos;s share menu for the full-screen
+                app experience.
+              </p>
+            </div>
+          </div>
+        </SettingsSection>
+
+        <SettingsSection label="Add-ons">
+          <div className="flex flex-col gap-2 px-4 py-3.5">
+            {addonRegistry.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No add-ons yet. Approved extras get a line here — nothing to configure until
+                then.
+              </p>
+            ) : (
+              addonRegistry.map((addon) => (
+                <Link key={addon.id} href={addon.href} className="text-sm underline">
+                  {addon.label}
+                </Link>
+              ))
+            )}
+          </div>
+        </SettingsSection>
+      </div>
     </div>
   );
 }

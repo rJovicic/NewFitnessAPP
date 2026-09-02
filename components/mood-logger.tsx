@@ -2,8 +2,17 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { logMood } from "@/app/(dashboard)/mood/actions";
+
+const MOODS = [
+  { value: 1, emoji: "😞" },
+  { value: 2, emoji: "😕" },
+  { value: 3, emoji: "😐" },
+  { value: 4, emoji: "🙂" },
+  { value: 5, emoji: "😄" },
+] as const;
 
 export function MoodLogger({ initialMood }: { initialMood: number | null }) {
   const router = useRouter();
@@ -21,23 +30,32 @@ export function MoodLogger({ initialMood }: { initialMood: number | null }) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-5">
       <div className="flex gap-2">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <Button
-            key={n}
-            variant={saved === n ? "default" : "outline"}
-            size="lg"
+        {MOODS.map((m) => (
+          <button
+            key={m.value}
+            type="button"
             disabled={isPending}
-            aria-label={`Mood ${n} out of 5`}
-            aria-pressed={saved === n}
-            onClick={() => handleLog(n)}
+            aria-label={`Mood ${m.value} out of 5`}
+            aria-pressed={saved === m.value}
+            onClick={() => handleLog(m.value)}
+            className={cn(
+              "flex size-14 items-center justify-center rounded-full border text-2xl outline-none transition-all focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-95",
+              saved === m.value
+                ? "border-primary bg-primary/5 scale-105"
+                : "border-border hover:bg-muted"
+            )}
           >
-            {n}
-          </Button>
+            <span aria-hidden="true">{m.emoji}</span>
+          </button>
         ))}
       </div>
-      {saved !== null && <p className="text-sm text-muted-foreground">Logged today: {saved}/5</p>}
+      {saved !== null && (
+        <p className="flex items-center gap-1.5 text-sm font-medium text-fat">
+          <Check className="size-4" strokeWidth={2.5} /> Logged today: {saved}/5
+        </p>
+      )}
     </div>
   );
 }

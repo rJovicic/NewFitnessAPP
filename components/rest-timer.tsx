@@ -3,6 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
+const SIZE = 220;
+const STROKE = 10;
+const RADIUS = (SIZE - STROKE) / 2;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
 function beep() {
   try {
     const AudioContextCtor =
@@ -25,9 +30,13 @@ function beep() {
 
 export function RestTimer({
   seconds,
+  nextExerciseName,
+  nextSetLabel,
   onComplete,
 }: {
   seconds: number;
+  nextExerciseName?: string;
+  nextSetLabel?: string;
   onComplete: () => void;
 }) {
   const [remaining, setRemaining] = useState(seconds);
@@ -62,24 +71,77 @@ export function RestTimer({
     }
   }
 
+  const fraction = seconds > 0 ? Math.min(remaining / seconds, 1) : 0;
+  const offset = CIRCUMFERENCE * (1 - fraction);
   const m = Math.floor(remaining / 60);
   const s = remaining % 60;
 
   return (
-    <div className="flex flex-col items-center gap-4 rounded-xl border border-border bg-card p-6">
-      <p className="text-xs text-muted-foreground">Rest</p>
-      <p className="tabular-data text-6xl font-semibold tracking-tight">
-        {m}:{s.toString().padStart(2, "0")}
-      </p>
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => adjust(-15)}>
-          -15s
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => adjust(15)}>
-          +15s
-        </Button>
-        <Button variant="ghost" size="sm" onClick={skip}>
-          Skip
+    <div className="flex flex-col items-center gap-6">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Rest</p>
+      <div className="relative size-[220px]">
+        <svg
+          width={SIZE}
+          height={SIZE}
+          viewBox={`0 0 ${SIZE} ${SIZE}`}
+          className="-rotate-90"
+        >
+          <circle
+            cx={SIZE / 2}
+            cy={SIZE / 2}
+            r={RADIUS}
+            fill="none"
+            strokeWidth={STROKE}
+            className="stroke-muted"
+          />
+          <circle
+            cx={SIZE / 2}
+            cy={SIZE / 2}
+            r={RADIUS}
+            fill="none"
+            strokeWidth={STROKE}
+            strokeLinecap="round"
+            strokeDasharray={CIRCUMFERENCE}
+            strokeDashoffset={offset}
+            className="stroke-water transition-[stroke-dashoffset] duration-500 ease-linear"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-6 text-center">
+          <p className="tabular-data text-5xl font-semibold tracking-tight">
+            {m}:{s.toString().padStart(2, "0")}
+          </p>
+          {nextExerciseName && (
+            <div className="flex flex-col gap-0.5">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Next
+              </p>
+              <p className="text-sm font-medium">{nextExerciseName}</p>
+              {nextSetLabel && <p className="text-xs text-muted-foreground">{nextSetLabel}</p>}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="flex w-full flex-col items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            aria-label="Subtract 15 seconds from rest"
+            onClick={() => adjust(-15)}
+          >
+            -15s
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            aria-label="Add 15 seconds to rest"
+            onClick={() => adjust(15)}
+          >
+            +15s
+          </Button>
+        </div>
+        <Button size="lg" className="w-full" onClick={skip}>
+          Skip rest
         </Button>
       </div>
     </div>
