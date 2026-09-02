@@ -6,6 +6,7 @@ import { Check, ChevronDown, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { RestTimer } from "@/components/rest-timer";
+import { SectionHeader } from "@/components/fitness/section-header";
 import {
   logWorkout,
   type TodaysWorkout,
@@ -249,10 +250,8 @@ export function TrainScreen({
       )}
 
       {recentLogs.length > 0 && (
-        <div className="flex flex-col">
-          <p className="pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Recent
-          </p>
+        <div className="flex flex-col gap-2">
+          <SectionHeader title="Recent" />
           {recentLogs.map((log) => (
             <div
               key={log.id}

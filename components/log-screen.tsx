@@ -367,8 +367,11 @@ export function LogScreen({
         const totals = sumMacros(loggedEntries);
 
         return (
-          <section key={slot.type} className="flex flex-col gap-2">
-            <div className="flex items-start justify-between gap-3 px-0.5">
+          // Tonal containment (not a bordered/shadowed card) makes each
+          // meal read as one unit — the fix for meals visually blending
+          // into an undifferentiated list of rows.
+          <section key={slot.type} className="flex flex-col gap-2 rounded-lg bg-surface-sunken p-4">
+            <div className="flex items-start justify-between gap-3">
               <div className="flex flex-col gap-0.5">
                 <p className="tabular-data text-xs text-muted-foreground">{slot.time}</p>
                 <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

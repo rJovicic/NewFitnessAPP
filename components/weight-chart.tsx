@@ -52,6 +52,27 @@ export function WeightChart({ data }: { data: WeightPoint[] }) {
     );
   }
 
+  // A single point can't show a trend — a near-empty chart with one dot
+  // reads as broken, not "early data." Show an intentional state instead
+  // until there's enough history for the chart itself to be meaningful.
+  if (data.length === 1) {
+    const [point] = data;
+    return (
+      <div className="flex flex-col items-center gap-1 py-6 text-center">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Your first weigh-in
+        </p>
+        <p className="font-display text-4xl font-semibold tracking-tight">
+          {point.weightKg.toFixed(1)}
+          <span className="text-lg font-normal text-muted-foreground"> kg</span>
+        </p>
+        <p className="pt-1 text-sm text-muted-foreground">
+          Keep logging your weight to reveal your trend.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <SegmentedControl

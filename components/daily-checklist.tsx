@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SectionHeader } from "@/components/fitness/section-header";
 import { cn } from "@/lib/utils";
 import {
   logSleepHours,
@@ -120,24 +121,24 @@ export function DailyChecklist({ data }: { data: DailyChecklistData }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col">
-        <div className="flex items-baseline justify-between pb-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Today&apos;s checklist
-          </p>
-          <span className="tabular-data text-xs text-muted-foreground">
-            {completeCount} / {items.length}
-          </span>
+        <SectionHeader
+          title="Today's checklist"
+          action={
+            <span className="tabular-data text-sm text-muted-foreground">
+              {completeCount} / {items.length}
+            </span>
+          }
+        />
+        <div className="mt-2">
+          {items.map((item, i) => (
+            <ChecklistRow key={item.label} index={i + 1} item={item} />
+          ))}
         </div>
-        {items.map((item, i) => (
-          <ChecklistRow key={item.label} index={i + 1} item={item} />
-        ))}
       </div>
 
       {data.supplements.length > 0 && (
         <div className="flex flex-col gap-1">
-          <p className="pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Supplements
-          </p>
+          <SectionHeader title="Supplements" />
           <div className="flex flex-col">
             {data.supplements.map((s) => (
               <button
