@@ -19,7 +19,7 @@ export function QuantityStepper({
         type="button"
         aria-label={`Decrease by ${step}${unit}`}
         onClick={() => onChange(Math.max(min, value - step))}
-        className="flex size-11 shrink-0 items-center justify-center rounded-full border border-input text-lg font-medium transition-transform active:scale-95"
+        className="flex size-11 shrink-0 items-center justify-center rounded-full border border-input text-lg font-medium outline-none transition-transform focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-95"
       >
         −
       </button>
@@ -31,7 +31,7 @@ export function QuantityStepper({
         type="button"
         aria-label={`Increase by ${step}${unit}`}
         onClick={() => onChange(value + step)}
-        className="flex size-11 shrink-0 items-center justify-center rounded-full border border-input text-lg font-medium transition-transform active:scale-95"
+        className="flex size-11 shrink-0 items-center justify-center rounded-full border border-input text-lg font-medium outline-none transition-transform focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-95"
       >
         +
       </button>

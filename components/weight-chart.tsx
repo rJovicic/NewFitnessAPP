@@ -11,6 +11,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { dateNDaysAgoInAppTimezone } from "@/lib/timezone";
 import type { WeightPoint } from "@/app/(dashboard)/progress/actions";
 
 const TIMEFRAMES = [
@@ -34,9 +35,10 @@ export function WeightChart({ data }: { data: WeightPoint[] }) {
     const def = TIMEFRAMES.find((t) => t.value === timeframe)!;
     let sliced = data;
     if (def.days) {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - def.days);
-      const cutoffStr = cutoff.toISOString().slice(0, 10);
+      // App-timezone-anchored cutoff, not browser-local date arithmetic —
+      // a viewer in a different timezone than Europe/Zagreb must not see a
+      // different set of days for "7D"/"30D"/etc.
+      const cutoffStr = dateNDaysAgoInAppTimezone(def.days);
       sliced = data.filter((p) => p.date >= cutoffStr);
     }
     return sliced.map((p) => ({ ...p, label: formatDateShort(p.date) }));

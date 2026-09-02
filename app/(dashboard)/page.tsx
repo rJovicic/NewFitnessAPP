@@ -10,11 +10,14 @@ import { getDailyChecklist } from "./checklist-actions";
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
-// Tiles shown alongside the daily-metrics grid, above the checklist —
-// everything else in the registry renders after it (summary/plan tiles),
-// so a newly-registered tile lands in a sensible spot without this file
-// needing to know about it. See lib/tile-registry.tsx.
-const METRIC_GRID_IDS = new Set(["water", "steps", "streak", "mood"]);
+// Only the two metrics with an explicit daily target (water, steps) sit in
+// the primary grid directly under the hero — streak/mood/weekly-summary/
+// program-progress/fasting are reflective or derived rather than "today's
+// numbers," so they read as secondary, below the checklist. Everything
+// not listed here lands in the secondary group by default, so a newly
+// registered tile still shows up without this file knowing about it. See
+// lib/tile-registry.tsx.
+const PRIMARY_METRIC_IDS = new Set(["water", "steps"]);
 
 function greetingFor(hour: number) {
   if (hour < 5) return "Good night";
@@ -56,8 +59,8 @@ export default async function DashboardHome({
   });
   const firstName = data.fullName.split(" ")[0];
 
-  const metricTiles = dashboardTiles.filter((tile) => METRIC_GRID_IDS.has(tile.id));
-  const summaryTiles = dashboardTiles.filter((tile) => !METRIC_GRID_IDS.has(tile.id));
+  const metricTiles = dashboardTiles.filter((tile) => PRIMARY_METRIC_IDS.has(tile.id));
+  const summaryTiles = dashboardTiles.filter((tile) => !PRIMARY_METRIC_IDS.has(tile.id));
 
   return (
     <div className="flex flex-col gap-6">

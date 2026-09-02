@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { RestTimer } from "@/components/rest-timer";
 import {
@@ -98,6 +97,8 @@ export function TrainScreen({
     const step = steps[stepIndex];
     const exercise = workout.exercises[step.exerciseIndex];
     const isLastStep = stepIndex >= steps.length - 1;
+    const nextStep = steps[stepIndex + 1];
+    const nextExercise = nextStep ? workout.exercises[nextStep.exerciseIndex] : undefined;
 
     return (
       <div className="flex min-h-[calc(100svh-9rem)] flex-col justify-between gap-8 px-4 py-6">
@@ -128,9 +129,16 @@ export function TrainScreen({
           )}
         </div>
 
-        <Button size="lg" className="w-full" onClick={markSetDone}>
-          {isLastStep ? "Finish last set" : "Set complete"}
-        </Button>
+        <div className="flex w-full flex-col items-center gap-2.5">
+          <Button size="lg" className="w-full" onClick={markSetDone}>
+            {isLastStep ? "Finish last set" : "Set complete"}
+          </Button>
+          {nextExercise && nextStep && (
+            <p className="text-xs text-muted-foreground">
+              Next · {nextExercise.name} · Set {nextStep.setNumber} of {nextExercise.rounds}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
@@ -139,15 +147,17 @@ export function TrainScreen({
     const step = steps[stepIndex];
     const nextStep = steps[stepIndex + 1];
     const exercise = workout.exercises[step.exerciseIndex];
-    const nextExercise = nextStep ? workout.exercises[nextStep.exerciseIndex] : undefined;
-    const nextLabel =
-      nextExercise && nextExercise !== exercise ? nextExercise.name : exercise.name;
+    const nextExercise = nextStep ? workout.exercises[nextStep.exerciseIndex] : exercise;
+    const nextSetLabel = nextStep
+      ? `Set ${nextStep.setNumber} of ${nextExercise.rounds}`
+      : undefined;
 
     return (
       <div className="flex min-h-[calc(100svh-9rem)] flex-col items-center justify-center gap-6 px-4 py-8">
         <RestTimer
           seconds={exercise.restSeconds}
-          nextExerciseName={nextLabel}
+          nextExerciseName={nextExercise.name}
+          nextSetLabel={nextSetLabel}
           onComplete={afterRest}
         />
       </div>
@@ -209,22 +219,20 @@ export function TrainScreen({
         </div>
       ) : (
         <>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col divide-y divide-border rounded-xl border border-border px-3">
             {workout.exercises.map((ex, i) => (
-              <Card key={ex.id}>
-                <CardContent className="flex items-center gap-3">
-                  <span className="tabular-data w-6 shrink-0 text-sm font-medium text-muted-foreground">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{ex.name}</p>
-                    <p className="text-xs text-muted-foreground">{ex.muscleGroup} · {ex.repsTarget}</p>
-                  </div>
-                  <span className="tabular-data shrink-0 text-xs text-muted-foreground">
-                    {ex.rounds}× · {ex.restSeconds}s rest
-                  </span>
-                </CardContent>
-              </Card>
+              <div key={ex.id} className="flex items-center gap-3 py-2.5">
+                <span className="tabular-data w-6 shrink-0 text-sm font-medium text-muted-foreground">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{ex.name}</p>
+                  <p className="text-xs text-muted-foreground">{ex.muscleGroup} · {ex.repsTarget}</p>
+                </div>
+                <span className="tabular-data shrink-0 text-xs text-muted-foreground">
+                  {ex.rounds}× · {ex.restSeconds}s rest
+                </span>
+              </div>
             ))}
           </div>
 
@@ -237,17 +245,17 @@ export function TrainScreen({
       {recentLogs.length > 0 && (
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-medium text-muted-foreground">Recent</h3>
-          {recentLogs.map((log) => (
-            <Card key={log.id}>
-              <CardContent className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex flex-col divide-y divide-border rounded-xl border border-border px-3">
+            {recentLogs.map((log) => (
+              <div key={log.id} className="flex items-center justify-between py-2.5 text-xs text-muted-foreground">
                 <span>{log.focusName}</span>
                 <span className="tabular-data">
                   {log.durationSeconds ? `${Math.round(log.durationSeconds / 60)} min` : "—"} ·
                   Effort {log.perceivedEffort ?? "—"}
                 </span>
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

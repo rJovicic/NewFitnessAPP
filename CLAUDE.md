@@ -176,9 +176,6 @@ prior builds. The structure below exists specifically to prevent that here.
 - Progress-photo date comparison (pick two dates side by side) — the redesign session
   built the "current set" comparison layout (front large + side/back pair) but not
   historical two-date comparison; noted as a possible follow-up, not built.
-- Multi-item "cart" meal logging (add several foods to one meal_log in one sitting)
-  was intentionally dropped during the redesign in favor of one-tap single-item logging
-  (see session log below) — flagging in case daily use shows a real need for it back.
 
 ## Known environment constraint (dev sandbox only, not the deployed app)
 
@@ -654,3 +651,62 @@ don't add a URL prefix — confirmed true in practice. The auth boundary is ther
   `claude/fitness-app-ui-ux-redesign-kvsj7w` and pushed; no PR opened (not requested this
   session). Next: user should eyeball the live app on their phone per the usual pattern,
   flag anything that reads wrong, then this branch can go through the PR-to-main flow.
+- `2026-09-02` — Final polish pass on the redesign (explicit follow-up master prompt,
+  same session): fixed one real regression the redesign introduced, then a QA/a11y/
+  hierarchy sweep. Preserved the visual direction and all business rules — no
+  architecture changes. **Regression fix:** the redesign had simplified meal logging to
+  one-food-at-a-time, losing the ability to log a real multi-food meal in one sitting.
+  `components/log-screen.tsx`'s Add Food sheet now builds a `cart: CartItem[]` — pick a
+  food (search/recent/scan/manual) → set quantity → "Add to meal" returns to the sheet
+  (not closed) → repeat → a "Selected" list shows each item (tap to edit quantity, tap
+  trash to remove) with a sticky running meal total → "Add meal (N items)" saves them all
+  through the existing `logMeal(mealType, items[])` action in one `meal_logs` row, same
+  snapshot semantics as before. **`window.confirm` replaced:** new
+  `components/ui/alert-dialog.tsx` (centered, `role="alertdialog"`, Cancel focused first
+  so a stray Enter can't confirm a delete) backs the "Remove meal?" confirmation.
+  **Focus management:** new `lib/use-focus-trap.ts` (hand-rolled, shared by `Sheet` and
+  `AlertDialog`) moves focus in on open, traps Tab/Shift+Tab, restores focus to the
+  trigger on close, Escape closes — `Sheet` also switched from `aria-label` to
+  `aria-labelledby` pointing at its visible title. **Search stale-response guard:** a
+  sequence-number ref in the Log screen's debounced search — a slower, older response can
+  no longer overwrite a faster, newer one. **Timezone-safe chart filtering:**
+  `WeightChart`'s 7D/30D/90D cutoff used browser-local `Date` arithmetic sliced as UTC,
+  which could disagree with the app's fixed Europe/Zagreb timezone depending on the
+  viewer's own clock; new `dateNDaysAgoInAppTimezone()` in `lib/timezone.ts` does the
+  cutoff via `todayInAppTimezone()` + calendar-day subtraction instead. **Hierarchy:**
+  Log's meal-slot headers now show a running total (kcal + food count + P/C/F) and rows
+  dropped their per-item bordered-box treatment for plain divide-y rows; Home's tile grid
+  now only shows Water/Steps as "primary" under the hero (streak/mood/weekly-summary/
+  program-progress/fasting moved below the checklist as secondary, matching how the
+  master prompt itself categorized them); Train's exercise-overview and recent-workout
+  lists dropped their per-row `Card` wrappers for the same plain-row treatment (removed
+  a now-unused `Card` import); the active-workout screen gained a "Next · exercise · set"
+  caption so what's coming is visible before finishing the current set, not just during
+  rest; `RestTimer` gained a full-width "Skip rest" primary button (was a small `ghost`
+  button) plus the next exercise's set number, not just its name. **Correctness bug
+  caught in the same pass:** `ProgressScreen`'s adjustment-suggestion "Apply" handler
+  called `applyAdjustment()` but never checked its `{ok, message}` result — a failed
+  write would still dismiss the suggestion and silently claim success. Now gated on
+  `result.ok` with an error shown on failure. **Wording/fairness fixes:** the weight
+  hero's "Avg / week" is now explicit ("Avg. loss"/"Avg. gain"/"Avg. change" + "kg/week"
+  units); body-measurement deltas dropped their green/red good-bad coloring since,
+  unlike weight (which has a documented loss goal), a measurement moving up or down
+  isn't inherently good or bad for every field (e.g. biceps growing). **Touch
+  targets/focus rings:** swept for icon-only and text-link buttons missing either a
+  ~44px target or a visible `focus-visible` ring — fixed in the Log sheet's back/manual-
+  entry/cart-remove buttons, `QuantityStepper`, `MoodLogger`'s emoji buttons, the
+  barcode scanner's close button (light ring for its dark background), and `Sheet`'s own
+  close button; the More sheet's rows grew to `min-h-14` and gained a one-line
+  description per item ("Daily check-in" / "App & preferences"). GF three-state
+  language, `lib/macros.ts`, RLS, and the snapshot-logging model were not touched.
+  **Verification:** `npm run lint` and `npm run build` both clean throughout (re-run
+  after each batch of changes, not just once at the end). **Not verified — same
+  constraint as every prior session:** this sandbox still has no real Supabase
+  credentials (only a placeholder `.env.local` for the build) and `*.vercel.app` is
+  blocked by the egress proxy (confirmed again this session via a direct curl, 403), and
+  the `playwright` binary isn't installed in `node_modules/.bin`— so no Playwright run,
+  no live click-through, no screenshots at any viewport. Everything above is a code-
+  level, build-clean, lint-clean fix verified by reading the resulting code, not by
+  rendering it. Real-device verification (the master prompt's own Phase 6/QA ask) is
+  still outstanding. Committed and pushed to `claude/fitness-app-ui-ux-redesign-kvsj7w`;
+  no PR opened (not requested).

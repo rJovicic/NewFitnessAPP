@@ -60,6 +60,7 @@ export function ProgressScreen({
 
   const [photoMessage, setPhotoMessage] = useState<string | null>(null);
   const [dismissedTypes, setDismissedTypes] = useState<string[]>([]);
+  const [adjustmentMessage, setAdjustmentMessage] = useState<string | null>(null);
   const fileInputs = {
     front: useRef<HTMLInputElement>(null),
     side: useRef<HTMLInputElement>(null),
@@ -114,10 +115,19 @@ export function ProgressScreen({
   }
 
   function handleApplySuggestion(suggestion: AdjustmentSuggestion) {
+    setAdjustmentMessage(null);
     startTransition(async () => {
-      await applyAdjustment(suggestion.type, suggestion.suggestedDeltaKcal, suggestion.message);
-      setDismissedTypes((prev) => [...prev, suggestion.type]);
-      router.refresh();
+      const result = await applyAdjustment(
+        suggestion.type,
+        suggestion.suggestedDeltaKcal,
+        suggestion.message
+      );
+      if (result.ok) {
+        setDismissedTypes((prev) => [...prev, suggestion.type]);
+        router.refresh();
+      } else {
+        setAdjustmentMessage(result.message ?? "Couldn't apply this adjustment. Try again.");
+      }
     });
   }
 
@@ -156,6 +166,9 @@ export function ProgressScreen({
                     Not now
                   </Button>
                 </div>
+                {adjustmentMessage && (
+                  <p className="text-xs text-destructive">{adjustmentMessage}</p>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -200,10 +213,16 @@ export function ProgressScreen({
               <StatRow label="Lost" value={`${weightSummary.weightLostKg.toFixed(1)} kg`} />
               <StatRow label="To goal" value={`${weightSummary.weightRemainingKg.toFixed(1)} kg`} />
               <StatRow
-                label="Avg / week"
+                label={
+                  weightSummary.avgKgPerWeek > 0
+                    ? "Avg. loss"
+                    : weightSummary.avgKgPerWeek < 0
+                      ? "Avg. gain"
+                      : "Avg. change"
+                }
                 value={
                   weightSummary.avgKgPerWeek !== 0
-                    ? `${Math.abs(weightSummary.avgKgPerWeek).toFixed(2)} kg`
+                    ? `${Math.abs(weightSummary.avgKgPerWeek).toFixed(2)} kg/week`
                     : "—"
                 }
               />
@@ -256,6 +275,11 @@ export function ProgressScreen({
             {measurements
               .filter((m) => m.currentCm !== null)
               .map((m) => (
+                // No good/bad coloring on the delta here — unlike weight
+                // (which has an explicit documented loss goal), a bigger or
+                // smaller measurement isn't inherently "better" for every
+                // field (e.g. biceps growing can be a good sign too), so
+                // this stays neutral rather than implying a direction.
                 <StatRow
                   key={m.key}
                   label={m.label}
@@ -265,7 +289,6 @@ export function ProgressScreen({
                       ? `${m.deltaCm > 0 ? "+" : ""}${m.deltaCm} cm`
                       : undefined
                   }
-                  deltaTone={m.deltaCm === null ? "neutral" : m.deltaCm < 0 ? "good" : "bad"}
                 />
               ))}
           </div>

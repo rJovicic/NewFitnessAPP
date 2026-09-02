@@ -31,10 +31,12 @@ function beep() {
 export function RestTimer({
   seconds,
   nextExerciseName,
+  nextSetLabel,
   onComplete,
 }: {
   seconds: number;
   nextExerciseName?: string;
+  nextSetLabel?: string;
   onComplete: () => void;
 }) {
   const [remaining, setRemaining] = useState(seconds);
@@ -109,19 +111,37 @@ export function RestTimer({
             {m}:{s.toString().padStart(2, "0")}
           </p>
           {nextExerciseName && (
-            <p className="text-xs text-muted-foreground">Next · {nextExerciseName}</p>
+            <div className="flex flex-col gap-0.5">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Next
+              </p>
+              <p className="text-sm font-medium">{nextExerciseName}</p>
+              {nextSetLabel && <p className="text-xs text-muted-foreground">{nextSetLabel}</p>}
+            </div>
           )}
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={() => adjust(-15)}>
-          -15s
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => adjust(15)}>
-          +15s
-        </Button>
-        <Button variant="ghost" size="sm" onClick={skip}>
-          Skip
+      <div className="flex w-full flex-col items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            aria-label="Subtract 15 seconds from rest"
+            onClick={() => adjust(-15)}
+          >
+            -15s
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            aria-label="Add 15 seconds to rest"
+            onClick={() => adjust(15)}
+          >
+            +15s
+          </Button>
+        </div>
+        <Button size="lg" className="w-full" onClick={skip}>
+          Skip rest
         </Button>
       </div>
     </div>

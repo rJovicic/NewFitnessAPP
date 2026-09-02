@@ -5,6 +5,7 @@ import { Barcode, ChevronLeft, Plus, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet } from "@/components/ui/sheet";
+import { AlertDialog } from "@/components/ui/alert-dialog";
 import { GfBadge, type GlutenStatus } from "@/components/gf-badge";
 import { GfDisclaimer } from "@/components/gf-disclaimer";
 import { BarcodeScannerModal } from "@/components/barcode-scanner";
@@ -22,16 +23,22 @@ import {
   type PlanMealEntry,
   type FoodResult,
   type RecentFood,
+  type MealItemInput,
   type LoggedCustomMeal,
   type OffSearchResult,
 } from "@/app/(dashboard)/log/actions";
 
-function macrosForQuantity(food: {
-  kcal100g: number;
-  protein100g: number;
-  carbs100g: number;
-  fat100g: number;
-}, quantityG: number) {
+interface Macros {
+  kcal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+function macrosForQuantity(
+  food: { kcal100g: number; protein100g: number; carbs100g: number; fat100g: number },
+  quantityG: number
+): Macros {
   const factor = quantityG / 100;
   return {
     kcal: Math.round(food.kcal100g * factor),
@@ -41,16 +48,26 @@ function macrosForQuantity(food: {
   };
 }
 
-interface TimelineEntry {
+function sumMacros(list: Macros[]): Macros {
+  return list.reduce(
+    (acc, m) => ({
+      kcal: acc.kcal + m.kcal,
+      protein: acc.protein + m.protein,
+      carbs: acc.carbs + m.carbs,
+      fat: acc.fat + m.fat,
+    }),
+    { kcal: 0, protein: 0, carbs: 0, fat: 0 }
+  );
+}
+
+interface TimelineEntry extends Macros {
   key: string;
   name: string;
   detail: string;
-  kcal: number;
-  protein: number;
-  carbs: number;
-  fat: number;
   glutenStatus: GlutenStatus | null;
+  /** Present = a planned meal not yet logged (shows a "Log" action). */
   planMealId?: string;
+  /** Present = an actually-logged entry (shows a delete action, counts toward the slot total). */
   deletableId?: string;
 }
 
@@ -69,10 +86,7 @@ function timelineForSlot(
         key: `plan-${plan.id}`,
         name: plan.food.name,
         detail: "Planned meal",
-        kcal: m.kcal,
-        protein: m.protein,
-        carbs: m.carbs,
-        fat: m.fat,
+        ...m,
         glutenStatus: plan.food.glutenStatus,
         deletableId: plan.loggedMealLogId,
       });
@@ -81,10 +95,7 @@ function timelineForSlot(
         key: `plan-pending-${plan.id}`,
         name: plan.food.name,
         detail: `Planned · ${m.kcal} kcal`,
-        kcal: m.kcal,
-        protein: m.protein,
-        carbs: m.carbs,
-        fat: m.fat,
+        ...m,
         glutenStatus: plan.food.glutenStatus,
         planMealId: plan.id,
       });
@@ -92,14 +103,13 @@ function timelineForSlot(
   }
 
   for (const log of loggedMeals.filter((l) => l.mealType === slotType)) {
-    const total = log.items.reduce(
-      (acc, item) => ({
-        kcal: acc.kcal + item.kcal,
-        protein: acc.protein + item.proteinG,
-        carbs: acc.carbs + item.carbsG,
-        fat: acc.fat + item.fatG,
-      }),
-      { kcal: 0, protein: 0, carbs: 0, fat: 0 }
+    const total = sumMacros(
+      log.items.map((item) => ({
+        kcal: item.kcal,
+        protein: item.proteinG,
+        carbs: item.carbsG,
+        fat: item.fatG,
+      }))
     );
     entries.push({
       key: `log-${log.id}`,
@@ -120,6 +130,12 @@ function timelineForSlot(
   return entries;
 }
 
+interface CartItem {
+  key: string;
+  food: FoodResult;
+  quantityG: number;
+}
+
 type SheetStep = "browse" | "quantity" | "manual";
 
 export function LogScreen({
@@ -134,15 +150,20 @@ export function LogScreen({
   targetKcal: number;
 }) {
   const [isPending, startTransition] = useTransition();
-  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [busyPlanId, setBusyPlanId] = useState<string | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
+
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const [addSheetSlot, setAddSheetSlot] = useState<string | null>(null);
   const [sheetStep, setSheetStep] = useState<SheetStep>("browse");
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedFood, setSelectedFood] = useState<FoodResult | null>(null);
   const [quantityG, setQuantityG] = useState(100);
+  const [editingCartKey, setEditingCartKey] = useState<string | null>(null);
 
   const [scannerOpen, setScannerOpen] = useState(false);
-  const [scanMessage, setScanMessage] = useState<string | null>(null);
+  const [sheetMessage, setSheetMessage] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<FoodResult[]>([]);
@@ -150,6 +171,10 @@ export function LogScreen({
   const [searchLoading, setSearchLoading] = useState(false);
   const [resolvingCode, setResolvingCode] = useState<string | null>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Guards against a slower, older search response overwriting a faster,
+  // newer one — only the response whose seq still matches the latest
+  // dispatched search is applied.
+  const searchSeq = useRef(0);
 
   const [recentFoods, setRecentFoods] = useState<RecentFood[]>([]);
   const [recentLoading, setRecentLoading] = useState(false);
@@ -157,11 +182,13 @@ export function LogScreen({
   function openAddSheet(slotType: string) {
     setAddSheetSlot(slotType);
     setSheetStep("browse");
+    setCart([]);
     setSelectedFood(null);
+    setEditingCartKey(null);
     setSearchQuery("");
     setSearchResults([]);
     setOffResults([]);
-    setScanMessage(null);
+    setSheetMessage(null);
     setRecentLoading(true);
     getRecentFoods().then((foods) => {
       setRecentFoods(foods);
@@ -172,12 +199,16 @@ export function LogScreen({
   function closeAddSheet() {
     setAddSheetSlot(null);
     setScannerOpen(false);
+    setCart([]);
+    setSelectedFood(null);
+    setEditingCartKey(null);
   }
 
   function handleSearchInput(value: string) {
     setSearchQuery(value);
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     if (value.trim().length < 2) {
+      searchSeq.current += 1;
       setSearchResults([]);
       setOffResults([]);
       setSearchLoading(false);
@@ -185,7 +216,9 @@ export function LogScreen({
     }
     setSearchLoading(true);
     searchTimeout.current = setTimeout(async () => {
+      const seq = ++searchSeq.current;
       const [local, off] = await Promise.all([searchFoods(value), searchOffFoods(value)]);
+      if (seq !== searchSeq.current) return; // superseded by a newer search
       setSearchResults(local);
       const localNames = new Set(local.map((f) => f.name.toLowerCase()));
       setOffResults(off.filter((f) => !localNames.has(f.name.toLowerCase())));
@@ -193,24 +226,55 @@ export function LogScreen({
     }, 300);
   }
 
-  function pickFood(food: FoodResult, quantity = 100) {
+  function pickNewFood(food: FoodResult, quantity = 100) {
     setSelectedFood(food);
     setQuantityG(quantity);
+    setEditingCartKey(null);
+    setSheetMessage(null);
     setSheetStep("quantity");
+  }
+
+  function editCartItem(item: CartItem) {
+    setSelectedFood(item.food);
+    setQuantityG(item.quantityG);
+    setEditingCartKey(item.key);
+    setSheetMessage(null);
+    setSheetStep("quantity");
+  }
+
+  function removeCartItem(key: string) {
+    setCart((prev) => prev.filter((item) => item.key !== key));
+  }
+
+  function commitQuantity() {
+    if (!selectedFood) return;
+    if (editingCartKey) {
+      setCart((prev) =>
+        prev.map((item) => (item.key === editingCartKey ? { ...item, quantityG } : item))
+      );
+    } else {
+      setCart((prev) => [
+        ...prev,
+        { key: `${selectedFood.id}-${Date.now()}`, food: selectedFood, quantityG },
+      ]);
+    }
+    setSelectedFood(null);
+    setEditingCartKey(null);
+    setSheetStep("browse");
   }
 
   async function handleScan(barcode: string) {
     setScannerOpen(false);
-    setScanMessage("Looking up...");
+    setSheetMessage("Looking up...");
     const result = await lookupBarcode(barcode);
     if (result.status === "found") {
-      setScanMessage(null);
-      pickFood(result.food);
+      setSheetMessage(null);
+      pickNewFood(result.food);
     } else if (result.status === "not_found") {
-      setScanMessage("Not found in Open Food Facts — enter it manually.");
+      setSheetMessage("Not found in Open Food Facts — enter it manually.");
       setSheetStep("manual");
     } else {
-      setScanMessage(result.message);
+      setSheetMessage(result.message);
     }
   }
 
@@ -219,51 +283,68 @@ export function LogScreen({
     const lookup = await lookupBarcode(result.code);
     setResolvingCode(null);
     if (lookup.status === "found") {
-      pickFood(lookup.food);
+      pickNewFood(lookup.food);
     } else {
-      setScanMessage("Couldn't load that product's details. Try again.");
+      setSheetMessage("Couldn't load that product's details. Try again.");
     }
   }
 
-  function handleAddToMeal() {
-    if (!selectedFood || !addSheetSlot) return;
+  function handleSaveMeal() {
+    if (!addSheetSlot || cart.length === 0) return;
     startTransition(async () => {
-      const result = await logMeal(addSheetSlot, [
-        {
-          foodId: selectedFood.id,
-          quantityG,
-          kcal100g: selectedFood.kcal100g,
-          protein100g: selectedFood.protein100g,
-          carbs100g: selectedFood.carbs100g,
-          fat100g: selectedFood.fat100g,
-        },
-      ]);
+      const items: MealItemInput[] = cart.map((item) => ({
+        foodId: item.food.id,
+        quantityG: item.quantityG,
+        kcal100g: item.food.kcal100g,
+        protein100g: item.food.protein100g,
+        carbs100g: item.food.carbs100g,
+        fat100g: item.food.fat100g,
+      }));
+      const result = await logMeal(addSheetSlot, items);
       if (result.ok) {
         closeAddSheet();
       } else {
-        setScanMessage(result.message ?? "Couldn't save. Try again.");
+        setSheetMessage(result.message ?? "Couldn't save this meal. Try again.");
       }
     });
   }
 
   function handleLogPlanMeal(planMealId: string) {
-    setBusyKey(planMealId);
+    setBusyPlanId(planMealId);
+    setListError(null);
     startTransition(async () => {
-      await logPlanMeal(planMealId);
-      setBusyKey(null);
+      const result = await logPlanMeal(planMealId);
+      setBusyPlanId(null);
+      if (!result.ok) setListError(result.message ?? "Couldn't log this meal. Try again.");
     });
   }
 
-  function handleDelete(deletableId: string, name: string) {
-    if (!window.confirm(`Remove "${name}" from today's log?`)) return;
-    setBusyKey(deletableId);
+  function requestDelete(id: string, name: string) {
+    setListError(null);
+    setPendingDelete({ id, name });
+  }
+
+  function confirmDelete() {
+    if (!pendingDelete) return;
+    const { id } = pendingDelete;
     startTransition(async () => {
-      await deleteMealLog(deletableId);
-      setBusyKey(null);
+      const result = await deleteMealLog(id);
+      setPendingDelete(null);
+      if (!result.ok) setListError(result.message ?? "Couldn't remove that entry. Try again.");
     });
   }
 
   const activeSlotLabel = MEAL_SLOTS.find((s) => s.type === addSheetSlot)?.label ?? "";
+  const cartTotals = sumMacros(cart.map((item) => macrosForQuantity(item.food, item.quantityG)));
+
+  const sheetTitle =
+    sheetStep === "quantity"
+      ? editingCartKey
+        ? `Edit ${selectedFood?.name ?? ""}`
+        : (selectedFood?.name ?? "Add food")
+      : sheetStep === "manual"
+        ? "Add manually"
+        : `Add to ${activeSlotLabel}`;
 
   return (
     <div className="flex flex-col gap-6 px-4 py-4">
@@ -278,30 +359,37 @@ export function LogScreen({
         </p>
       </div>
 
+      {listError && <p className="text-sm text-destructive">{listError}</p>}
+
       {MEAL_SLOTS.map((slot) => {
         const entries = timelineForSlot(slot.type, planMeals, loggedMeals);
+        const loggedEntries = entries.filter((e) => e.deletableId);
+        const totals = sumMacros(loggedEntries);
+
         return (
           <section key={slot.type} className="flex flex-col gap-2">
-            <div className="flex items-center justify-between px-0.5">
+            <div className="flex items-start justify-between gap-3 px-0.5">
               <div>
                 <p className="text-sm font-semibold">{slot.label}</p>
                 <p className="text-xs text-muted-foreground">{slot.time}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => openAddSheet(slot.type)}
-                className="flex min-h-9 items-center gap-1 rounded-md px-2 text-xs font-medium text-primary hover:bg-muted"
-              >
-                <Plus className="size-3.5" strokeWidth={2.5} /> Add food
-              </button>
+              {loggedEntries.length > 0 && (
+                <div className="text-right">
+                  <p className="tabular-data text-sm font-semibold">{totals.kcal} kcal</p>
+                  <p className="tabular-data text-xs text-muted-foreground">
+                    {loggedEntries.length} food{loggedEntries.length !== 1 ? "s" : ""} · P
+                    {totals.protein} C{totals.carbs} F{totals.fat}
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div className="flex flex-col divide-y divide-border rounded-xl border border-border">
-              {entries.length === 0 ? (
-                <p className="px-3 py-3 text-xs text-muted-foreground">Nothing logged yet</p>
-              ) : (
-                entries.map((entry) => (
-                  <div key={entry.key} className="flex items-center justify-between gap-3 px-3 py-3">
+            {entries.length === 0 ? (
+              <p className="py-1 text-xs text-muted-foreground">Nothing planned or logged</p>
+            ) : (
+              <div className="flex flex-col divide-y divide-border">
+                {entries.map((entry) => (
+                  <div key={entry.key} className="flex items-center justify-between gap-3 py-2.5">
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{entry.name}</p>
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -315,7 +403,7 @@ export function LogScreen({
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={isPending && busyKey === entry.planMealId}
+                        disabled={isPending && busyPlanId === entry.planMealId}
                         onClick={() => handleLogPlanMeal(entry.planMealId!)}
                       >
                         Log
@@ -324,28 +412,31 @@ export function LogScreen({
                       <button
                         type="button"
                         aria-label={`Remove ${entry.name}`}
-                        disabled={isPending && busyKey === entry.deletableId}
-                        onClick={() => handleDelete(entry.deletableId!, entry.name)}
-                        className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-muted hover:text-destructive focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
+                        onClick={() => requestDelete(entry.deletableId!, entry.name)}
+                        className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-muted hover:text-destructive focus-visible:ring-[3px] focus-visible:ring-ring/50"
                       >
                         <Trash2 className="size-4" />
                       </button>
                     )}
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => openAddSheet(slot.type)}
+              className="flex min-h-9 w-fit items-center gap-1 rounded-md text-xs font-medium text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            >
+              <Plus className="size-3.5" strokeWidth={2.5} /> Add food
+            </button>
           </section>
         );
       })}
 
       <GfDisclaimer />
 
-      <Sheet
-        open={addSheetSlot !== null && !scannerOpen}
-        onClose={closeAddSheet}
-        title={sheetStep === "quantity" ? selectedFood?.name ?? "Add food" : `Add to ${activeSlotLabel}`}
-      >
+      <Sheet open={addSheetSlot !== null && !scannerOpen} onClose={closeAddSheet} title={sheetTitle}>
         {sheetStep === "browse" && (
           <div className="flex flex-col gap-4 pb-2">
             <Button variant="outline" onClick={() => setScannerOpen(true)}>
@@ -363,7 +454,7 @@ export function LogScreen({
               />
             </div>
 
-            {scanMessage && <p className="text-xs text-muted-foreground">{scanMessage}</p>}
+            {sheetMessage && <p className="text-xs text-muted-foreground">{sheetMessage}</p>}
 
             {searchQuery.trim().length >= 2 ? (
               <div className="flex flex-col gap-1">
@@ -379,7 +470,7 @@ export function LogScreen({
                       <button
                         key={food.id}
                         type="button"
-                        onClick={() => pickFood(food)}
+                        onClick={() => pickNewFood(food)}
                         className="flex min-h-12 items-center justify-between gap-2 px-3 py-2.5 text-left text-sm hover:bg-muted"
                       >
                         <span className="truncate">{food.name}</span>
@@ -423,7 +514,7 @@ export function LogScreen({
                       <button
                         key={food.id}
                         type="button"
-                        onClick={() => pickFood(food, food.lastQuantityG)}
+                        onClick={() => pickNewFood(food, food.lastQuantityG)}
                         className="flex min-h-12 items-center justify-between gap-2 px-3 py-2.5 text-left text-sm hover:bg-muted"
                       >
                         <span className="truncate">{food.name}</span>
@@ -437,11 +528,60 @@ export function LogScreen({
 
             <button
               type="button"
-              onClick={() => setSheetStep("manual")}
-              className="text-left text-xs font-medium text-primary"
+              onClick={() => {
+                setSheetMessage(null);
+                setSheetStep("manual");
+              }}
+              className="flex min-h-9 items-center text-left text-xs font-medium text-primary outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               Can&apos;t find it — enter manually
             </button>
+
+            {cart.length > 0 && (
+              <div className="sticky bottom-0 -mx-4 mt-2 flex flex-col gap-2 border-t border-border bg-surface-sheet px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                <p className="text-xs font-medium text-muted-foreground">Selected</p>
+                <div className="flex flex-col divide-y divide-border rounded-lg border border-border">
+                  {cart.map((item) => {
+                    const m = macrosForQuantity(item.food, item.quantityG);
+                    return (
+                      <div key={item.key} className="flex items-center justify-between gap-2 px-3 py-2">
+                        <button
+                          type="button"
+                          onClick={() => editCartItem(item)}
+                          className="min-w-0 flex-1 text-left"
+                        >
+                          <p className="truncate text-sm font-medium">{item.food.name}</p>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                            <span className="tabular-data text-xs text-muted-foreground">
+                              {item.quantityG}g · {m.kcal} kcal
+                            </span>
+                            <GfBadge status={item.food.glutenStatus} />
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Remove ${item.food.name} from meal`}
+                          onClick={() => removeCartItem(item.key)}
+                          className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-muted hover:text-destructive focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                        >
+                          <Trash2 className="size-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex items-baseline justify-between pt-1">
+                  <span className="text-sm font-medium">Meal total</span>
+                  <span className="tabular-data text-sm font-semibold">{cartTotals.kcal} kcal</span>
+                </div>
+                <p className="tabular-data text-xs text-muted-foreground">
+                  P {cartTotals.protein}g · C {cartTotals.carbs}g · F {cartTotals.fat}g
+                </p>
+                <Button onClick={handleSaveMeal} disabled={isPending}>
+                  {isPending ? "Saving..." : `Add meal (${cart.length} item${cart.length > 1 ? "s" : ""})`}
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
@@ -449,8 +589,12 @@ export function LogScreen({
           <div className="flex flex-col gap-5 pb-2">
             <button
               type="button"
-              onClick={() => setSheetStep("browse")}
-              className="flex items-center gap-1 text-xs font-medium text-muted-foreground"
+              onClick={() => {
+                setSheetStep("browse");
+                setSelectedFood(null);
+                setEditingCartKey(null);
+              }}
+              className="flex min-h-9 w-fit items-center gap-1 text-xs font-medium text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               <ChevronLeft className="size-3.5" /> Back
             </button>
@@ -473,18 +617,30 @@ export function LogScreen({
               );
             })()}
 
-            {scanMessage && <p className="text-sm text-destructive">{scanMessage}</p>}
-
-            <Button onClick={handleAddToMeal} disabled={isPending}>
-              {isPending ? "Adding..." : "Add to meal"}
+            <Button onClick={commitQuantity}>
+              {editingCartKey ? "Save changes" : "Add to meal"}
             </Button>
+            {editingCartKey && (
+              <Button
+                variant="ghost"
+                className="text-destructive hover:text-destructive"
+                onClick={() => {
+                  removeCartItem(editingCartKey);
+                  setSheetStep("browse");
+                  setSelectedFood(null);
+                  setEditingCartKey(null);
+                }}
+              >
+                Remove from meal
+              </Button>
+            )}
           </div>
         )}
 
         {sheetStep === "manual" && (
           <ManualEntryForm
             onBack={() => setSheetStep("browse")}
-            onCreated={(food) => pickFood(food)}
+            onCreated={(food) => pickNewFood(food)}
           />
         )}
       </Sheet>
@@ -494,10 +650,24 @@ export function LogScreen({
           onScan={handleScan}
           onClose={() => {
             setScannerOpen(false);
-            setScanMessage(null);
+            setSheetMessage(null);
           }}
         />
       )}
+
+      <AlertDialog
+        open={pendingDelete !== null}
+        title="Remove meal?"
+        description={
+          pendingDelete ? `${pendingDelete.name} will be removed from today's log.` : undefined
+        }
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        destructive
+        pending={isPending}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }
@@ -516,10 +686,12 @@ function ManualEntryForm({
   const [fat, setFat] = useState("");
   const [glutenStatus, setGlutenStatus] = useState<GlutenStatus>("unknown");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setError(null);
     const food = await createManualFood({
       name,
       kcal100g: Number(kcal) || 0,
@@ -529,7 +701,11 @@ function ManualEntryForm({
       glutenStatus,
     });
     setSaving(false);
-    if (food) onCreated(food);
+    if (food) {
+      onCreated(food);
+    } else {
+      setError("Couldn't save that food. Try again.");
+    }
   }
 
   return (
@@ -624,6 +800,7 @@ function ManualEntryForm({
           <option value="contains_gluten">Contains gluten</option>
         </select>
       </div>
+      {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" disabled={saving}>
         {saving ? "Adding..." : "Continue"}
       </Button>

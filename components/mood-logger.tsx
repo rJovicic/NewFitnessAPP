@@ -41,7 +41,7 @@ export function MoodLogger({ initialMood }: { initialMood: number | null }) {
             aria-pressed={saved === m.value}
             onClick={() => handleLog(m.value)}
             className={cn(
-              "flex size-14 items-center justify-center rounded-full border text-2xl transition-all active:scale-95",
+              "flex size-14 items-center justify-center rounded-full border text-2xl outline-none transition-all focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-95",
               saved === m.value
                 ? "border-primary bg-primary/5 scale-105"
                 : "border-border hover:bg-muted"

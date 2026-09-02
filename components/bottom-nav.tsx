@@ -12,6 +12,13 @@ function isActivePath(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
+// Presentation-only copy for the More sheet — kept out of nav-config.ts so
+// the registry itself stays the minimal href/label/icon/primary shape.
+const MORE_DESCRIPTIONS: Record<string, string> = {
+  "/mood": "Daily check-in",
+  "/settings": "App & preferences",
+};
+
 export function BottomNav() {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -82,12 +89,19 @@ export function BottomNav() {
                   onClick={() => setMoreOpen(false)}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium",
+                    "flex min-h-14 items-center gap-3 rounded-lg px-3 py-2.5 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
                     active ? "bg-muted" : "hover:bg-muted"
                   )}
                 >
-                  <Icon className="size-5 text-muted-foreground" strokeWidth={1.75} />
-                  {item.label}
+                  <Icon className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium">{item.label}</span>
+                    {MORE_DESCRIPTIONS[item.href] && (
+                      <span className="text-xs text-muted-foreground">
+                        {MORE_DESCRIPTIONS[item.href]}
+                      </span>
+                    )}
+                  </div>
                 </Link>
               </li>
             );

@@ -28,7 +28,7 @@ export function BarcodeScannerModal({
         <button
           onClick={onClose}
           aria-label="Close scanner"
-          className="flex size-11 items-center justify-center rounded-full bg-white/10 text-white"
+          className="flex size-11 items-center justify-center rounded-full bg-white/10 text-white outline-none focus-visible:ring-[3px] focus-visible:ring-white/70"
         >
           <X className="size-5" />
         </button>
