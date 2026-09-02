@@ -2,6 +2,7 @@ import { getDashboardData } from "@/lib/dashboard-data";
 import { dashboardTiles } from "@/lib/tile-registry";
 import { APP_TIMEZONE, currentHourInAppTimezone, todayInAppTimezone } from "@/lib/timezone";
 import { PageHeader } from "@/components/fitness/page-header";
+import { SectionHeader } from "@/components/fitness/section-header";
 import { DayStrip } from "@/components/day-strip";
 import { CalorieHero } from "@/components/calorie-hero";
 import { DailyChecklist } from "@/components/daily-checklist";
@@ -86,14 +87,12 @@ export default async function DashboardHome({
       <CalorieHero data={data} />
 
       {(waterTile || stepsTile) && (
-        <section className="flex flex-col px-4">
-          {isToday && (
-            <p className="pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Today
-            </p>
-          )}
-          {waterTile?.render(data)}
-          {stepsTile?.render(data)}
+        <section className="flex flex-col gap-2 px-4">
+          {isToday && <SectionHeader title="Today" />}
+          <div className="flex flex-col rounded-lg bg-surface-sunken px-4">
+            {waterTile?.render(data)}
+            {stepsTile?.render(data)}
+          </div>
         </section>
       )}
 
@@ -103,17 +102,17 @@ export default async function DashboardHome({
         </section>
       )}
 
-      <section className="flex flex-col px-4">
-        <p className="pb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          This week
-        </p>
-        {programProgressTile?.render(data)}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-4 mt-4">
-          {streakTile?.render(data)}
-          {moodTile?.render(data)}
-          {weeklySummaryTile?.render(data)}
+      <section className="flex flex-col gap-2 px-4">
+        <SectionHeader title="This week" />
+        <div className="flex flex-col rounded-lg bg-surface-sunken p-4">
+          {programProgressTile?.render(data)}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-4 mt-4">
+            {streakTile?.render(data)}
+            {moodTile?.render(data)}
+            {weeklySummaryTile?.render(data)}
+          </div>
+          <div className="border-t border-border">{fastingTile?.render(data)}</div>
         </div>
-        <div className="border-t border-border">{fastingTile?.render(data)}</div>
       </section>
 
       {otherTiles.length > 0 && (

@@ -785,3 +785,42 @@ don't add a URL prefix — confirmed true in practice. The auth boundary is ther
   against the actual iPhone screenshots the prompt asked for is still outstanding.
   Committed and pushed to `claude/fitness-app-ui-ux-redesign-kvsj7w`; no PR opened yet
   (not requested this round).
+- `2026-09-02` — PR #7 merged to `main`, user asked to push live — merged via GitHub MCP,
+  Vercel green pre-merge. **Same session, immediately after:** a follow-up visual
+  refinement pass driven by 4 attached real-app reference screenshots (Apple Fitness,
+  a Gentler-Streak-style app, MacroFactor, Hevy) used as a "visual design benchmark," not
+  content references. Branch restarted from `origin/main` first (prior PR merged, per the
+  branch-reuse rule). The core critique this round: the previous pass had gone too far
+  toward "bare rows with no boundary at all" — sections were blending together with no
+  cue where one ends and the next begins. Fix applied consistently, not per-screen ad
+  hoc: (1) **stronger section labels** — reused the existing `SectionHeader` component
+  (bold `font-display`, dark) for section-level introductions (Home's "Today"/"This
+  week", the checklist's own header, Train's "Recent") instead of the tiny muted
+  all-caps eyebrow, which stays reserved for genuine field-level micro-labels (EATEN/
+  TARGET/REMAINING inside the hero, STREAK/MOOD/etc in the weekly quad); (2) **tonal
+  containment, not cards** — the already-defined-but-unused `--surface-sunken` token
+  (`bg-surface-sunken`, a subtle warm-gray shift off the page background) now wraps
+  Home's "Today" (water/steps) and "This week" groups, and each Log meal-slot section,
+  so each reads as one bounded unit the way the reference apps use a tonal shift rather
+  than a border+shadow card — while the checklist itself stays open/unwrapped
+  deliberately, alternating contained and open sections per the brief. **Progress hero
+  restructure:** the "X kg to goal" distance moved out of the 3-column stat row and into
+  a prominent colored subtitle directly under the big current-weight number (matching
+  the references' "hero number + immediate context" pattern); the stat row below is now
+  2 columns (Lost, Avg change) instead of 3, breaking the "three identical dashboard
+  columns" look the prompt called out by name. **WeightChart:** added a dedicated
+  single-entry state ("YOUR FIRST WEIGH-IN" + the one logged number + an explanatory
+  line) instead of rendering a near-empty chart with one dot, which the prompt
+  specifically flagged as looking broken. Train/Settings were checked against the same
+  convention and largely already matched (Settings' own reference mock keeps
+  small-caps section labels, so left as-is). No business logic touched — same
+  constraint list as every prior pass (macros, GF safety, RLS, workout progression,
+  meal snapshot model, tile-registry.tsx). **Verification:** `npm run lint` and
+  `npm run build` clean after every batch. **Not verified — same constraint as every
+  prior session:** no real Supabase credentials, `*.vercel.app` blocked by the egress
+  proxy, no `playwright` binary — no live render or device screenshots, so the actual
+  before/after comparison against the attached iPhone references has not been done
+  visually, only by reading the resulting code. Committed and pushed to
+  `claude/fitness-app-ui-ux-redesign-kvsj7w`; no PR opened this round (not requested —
+  this message was design feedback only, unlike the prior two rounds which had an
+  explicit separate "push live" follow-up).

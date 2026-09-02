@@ -182,22 +182,16 @@ export function ProgressScreen({
               Your progress
             </p>
             {weightSummary.currentWeightKg !== null ? (
-              <div className="flex items-baseline gap-2">
+              <div className="flex flex-col gap-1">
                 <span className="font-display text-6xl font-semibold leading-none tracking-tight">
                   {weightSummary.currentWeightKg.toFixed(1)}
                   <span className="text-lg font-normal text-muted-foreground"> kg</span>
                 </span>
-                {weightSummary.weightLostKg !== 0 && (
-                  <span
-                    className={cn(
-                      "tabular-data text-sm font-medium",
-                      weightSummary.weightLostKg > 0 ? "text-fat" : "text-destructive"
-                    )}
-                  >
-                    {weightSummary.weightLostKg > 0 ? "↓" : "↑"}{" "}
-                    {Math.abs(weightSummary.weightLostKg).toFixed(1)} kg
-                  </span>
-                )}
+                <span className="tabular-data text-sm font-medium text-fat">
+                  {weightSummary.weightRemainingKg > 0
+                    ? `↓ ${weightSummary.weightRemainingKg.toFixed(1)} kg to goal`
+                    : "Goal reached"}
+                </span>
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">Log a weigh-in to see your trend.</p>
@@ -209,9 +203,8 @@ export function ProgressScreen({
               </div>
               <Progress value={weightSummary.percentToGoal / 100} tone="calories" />
             </div>
-            <div className="grid grid-cols-3 gap-3 border-t border-border pt-4">
+            <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
               <StatRow label="Lost" value={`${weightSummary.weightLostKg.toFixed(1)} kg`} />
-              <StatRow label="To goal" value={`${weightSummary.weightRemainingKg.toFixed(1)} kg`} />
               <StatRow
                 label={
                   weightSummary.avgKgPerWeek > 0
