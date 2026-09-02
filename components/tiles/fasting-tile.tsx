@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Timer } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 function parseHms(value: string): { h: number; m: number } {
@@ -28,6 +26,8 @@ function formatDuration(ms: number): string {
   return `${h}h ${m}m`;
 }
 
+// Plain status row, no card — composed as the last row of Home's "This
+// week" section.
 export function FastingTile({
   windowStart,
   windowEnd,
@@ -40,7 +40,8 @@ export function FastingTile({
   useEffect(() => {
     // Client-only mount: setting state directly in the effect body (rather
     // than in a callback) trips react-hooks/set-state-in-effect, so the
-    // first tick goes through rAF like CalorieRing's mount animation does.
+    // first tick goes through rAF, same pattern used for the calorie
+    // hero's progress-rule mount animation.
     const frame = requestAnimationFrame(() => setNow(new Date()));
     const id = setInterval(() => setNow(new Date()), 30_000);
     return () => {
@@ -51,14 +52,9 @@ export function FastingTile({
 
   if (!now) {
     return (
-      <Card>
-        <CardContent className="flex items-center gap-1.5 text-muted-foreground">
-          <Timer className="size-4" strokeWidth={2} />
-          <span className="text-sm font-medium text-foreground">
-            Fasting window
-          </span>
-        </CardContent>
-      </Card>
+      <div className="flex items-baseline justify-between py-3.5">
+        <span className="text-sm font-medium">Fasting window</span>
+      </div>
     );
   }
 
@@ -84,26 +80,13 @@ export function FastingTile({
   }
 
   return (
-    <Card className={isClosingSoon ? "border-carbs/50 bg-carbs/5" : undefined}>
-      <CardContent className="flex items-center gap-2.5">
-        <Timer
-          className={cn(
-            "size-4 shrink-0",
-            isClosingSoon
-              ? "text-carbs"
-              : isEating
-                ? "text-foreground"
-                : "text-muted-foreground"
-          )}
-          strokeWidth={2}
-        />
-        <div>
-          <p className={cn("text-sm font-medium", isClosingSoon && "text-carbs")}>
-            {statusLabel}
-          </p>
-          <p className="text-xs text-muted-foreground">{remainingLabel}</p>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="flex items-baseline justify-between py-3.5">
+      <span className={cn("text-sm font-medium", isClosingSoon && "text-carbs")}>
+        {statusLabel}
+      </span>
+      <span className={cn("tabular-data text-sm text-muted-foreground", isClosingSoon && "text-carbs")}>
+        {remainingLabel}
+      </span>
+    </div>
   );
 }

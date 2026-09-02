@@ -6,20 +6,39 @@
  * only (mobile MVP, no dark mode). Palette: warm paper/ink neutrals +
  * six semantic per-metric hues (not one purple gradient), desaturated
  * rather than candy-pastel so they hold up as ring/bar fills. Type:
- * Space Grotesk (display/numerals, tabular figures for the calorie ring)
- * + IBM Plex Sans (body/labels) + IBM Plex Mono (data readouts) — a
- * deliberate pairing, not the Inter default.
+ * Space Grotesk (display/numerals) + IBM Plex Sans (body/labels) +
+ * IBM Plex Mono (data readouts, used selectively — see the typography
+ * note below) — a deliberate pairing, not the Inter default.
  *
- * Surface/radius/shadow hierarchy (redesign pass): most surfaces are flat
- * (border, no shadow) — elevation is reserved for things that are
- * genuinely "above" the page (hero, floating nav, sheets, dialogs), per
- * the "not a stack of floating white rectangles" brief.
+ * Art-direction pass (2026-09): "premium personal performance journal,"
+ * not a generic AI-dashboard. Two structural rules everything below
+ * serves:
+ *  1. Card is reserved for genuinely important interactive/hero groups —
+ *     most information sits directly on the page, separated by
+ *     typography, whitespace and thin dividers (border-t/divide-y),
+ *     not by wrapping it in another rounded rectangle.
+ *  2. Section labels (text-xs uppercase tracking-wide) are the primary
+ *     structural device — "TODAY", "THIS WEEK", "MEAL 1" — doing the
+ *     hierarchy work cards used to do.
+ * Typography: the big "how am I doing" numbers (calories eaten, current
+ * weight) use font-display (Space Grotesk), not mono — mono/tabular-data
+ * is reserved for genuinely technical readouts where digit-width
+ * stability matters (timers, set/rep counters, macro grams inline in a
+ * row), not for every number on the screen.
+ *
+ * Surface/radius/shadow hierarchy: most surfaces are flat (border, no
+ * shadow) — elevation and the largest radius are reserved for things
+ * that are genuinely "above" the page (the calorie/weight hero, floating
+ * nav, sheets, dialogs), per the "not a stack of floating white
+ * rectangles" brief. Four radius tiers, not one flat value everywhere:
+ * small controls -> buttons -> ordinary containers -> hero-only.
  */
 
 :root {
-  --radius: 1rem;
-  --radius-control: 0.625rem;
-  --radius-hero: 1.375rem;
+  --radius-control: 0.625rem;   /* 10px — inputs, stepper buttons, segmented pills, badges */
+  --radius-button: 0.875rem;    /* 14px — every button, regardless of size */
+  --radius-container: 1.125rem; /* 18px — ordinary containers: settings rows, chart card */
+  --radius-hero: 1.625rem;      /* 26px — hero-only: calorie hero, weight hero */
 
   --background: #fbf9f6;
   --foreground: #1e2321;
@@ -70,8 +89,8 @@
 
 @theme inline {
   --radius-sm: var(--radius-control);
-  --radius-md: calc(var(--radius-control) + 2px);
-  --radius-lg: var(--radius);
+  --radius-md: var(--radius-button);
+  --radius-lg: var(--radius-container);
   --radius-xl: var(--radius-hero);
   --radius-2xl: calc(var(--radius-hero) + 6px);
 

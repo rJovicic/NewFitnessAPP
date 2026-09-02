@@ -1,27 +1,30 @@
-import { CalendarCheck } from "lucide-react";
-import { MetricCard } from "@/components/fitness/metric-card";
 import { getWeeklySummary } from "@/app/(dashboard)/weekly-summary/actions";
 
 // Self-contained: fetches its own data, so wiring this in touched only
-// lib/tile-registry.tsx, per the CLAUDE.md §7 extension pattern.
+// lib/tile-registry.tsx, per the CLAUDE.md §7 extension pattern. Renders
+// two bare stat blocks (Training, Meals) — no target denominator is
+// fabricated (the program doesn't define a weekly workout count), so
+// this shows days-hit / days-elapsed-this-week instead.
 export async function WeeklySummaryTile() {
   const summary = await getWeeklySummary();
   if (!summary) return null;
 
   return (
-    <MetricCard
-      tone="calories"
-      icon={CalendarCheck}
-      label="This week"
-      value={summary.daysOnPlan}
-      unit={`/ ${summary.daysElapsed} days on plan`}
-      footer={
-        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span className="tabular-data">{summary.workoutsCompleted} workouts</span>
-          <span className="tabular-data">{summary.mealLoggingDays} days logged</span>
-          <span className="tabular-data">{(summary.avgWaterMl / 1000).toFixed(1)}L avg water</span>
-        </div>
-      }
-    />
+    <>
+      <div className="flex flex-col gap-0.5">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Training
+        </p>
+        <p className="tabular-data text-lg font-semibold">
+          {summary.workoutsCompleted} / {summary.daysElapsed}
+        </p>
+      </div>
+      <div className="flex flex-col gap-0.5">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Meals</p>
+        <p className="tabular-data text-lg font-semibold">
+          {summary.mealLoggingDays} / {summary.daysElapsed}
+        </p>
+      </div>
+    </>
   );
 }

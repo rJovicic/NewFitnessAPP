@@ -115,11 +115,11 @@ export function TrainScreen({
               Set {step.setNumber} of {exercise.rounds}
             </p>
             <h2 className="font-display text-3xl font-semibold text-balance">{exercise.name}</h2>
-            <p className="text-sm text-muted-foreground">{exercise.repsTarget}</p>
+            <p className="text-base font-medium">{exercise.repsTarget}</p>
           </div>
 
           {exercise.instructions && (
-            <details className="group w-full rounded-xl border border-border p-3.5 text-left">
+            <details className="group w-full rounded-lg border border-border p-3.5 text-left">
               <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-medium">
                 How to
                 <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
@@ -213,25 +213,31 @@ export function TrainScreen({
       )}
 
       {workout.exercises.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border px-6 py-10 text-center">
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-6 py-10 text-center">
           <p className="text-sm font-medium">Rest day</p>
           <p className="text-sm text-muted-foreground">Recovery is part of the program.</p>
         </div>
       ) : (
         <>
-          <div className="flex flex-col divide-y divide-border rounded-xl border border-border px-3">
+          <div className="flex flex-col">
             {workout.exercises.map((ex, i) => (
-              <div key={ex.id} className="flex items-center gap-3 py-2.5">
-                <span className="tabular-data w-6 shrink-0 text-sm font-medium text-muted-foreground">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{ex.name}</p>
-                  <p className="text-xs text-muted-foreground">{ex.muscleGroup} · {ex.repsTarget}</p>
+              <div
+                key={ex.id}
+                className="flex items-start justify-between gap-4 border-t border-border py-4 first:border-t-0"
+              >
+                <div className="flex gap-3">
+                  <span className="tabular-data w-6 shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <p className="text-base font-medium">{ex.name}</p>
+                    <p className="text-xs text-muted-foreground">{ex.muscleGroup}</p>
+                  </div>
                 </div>
-                <span className="tabular-data shrink-0 text-xs text-muted-foreground">
-                  {ex.rounds}× · {ex.restSeconds}s rest
-                </span>
+                <div className="shrink-0 text-right">
+                  <p className="tabular-data text-sm font-medium">{ex.repsTarget}</p>
+                  <p className="tabular-data text-xs text-muted-foreground">{ex.rounds} sets</p>
+                </div>
               </div>
             ))}
           </div>
@@ -243,19 +249,22 @@ export function TrainScreen({
       )}
 
       {recentLogs.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <h3 className="text-sm font-medium text-muted-foreground">Recent</h3>
-          <div className="flex flex-col divide-y divide-border rounded-xl border border-border px-3">
-            {recentLogs.map((log) => (
-              <div key={log.id} className="flex items-center justify-between py-2.5 text-xs text-muted-foreground">
-                <span>{log.focusName}</span>
-                <span className="tabular-data">
-                  {log.durationSeconds ? `${Math.round(log.durationSeconds / 60)} min` : "—"} ·
-                  Effort {log.perceivedEffort ?? "—"}
-                </span>
-              </div>
-            ))}
-          </div>
+        <div className="flex flex-col">
+          <p className="pb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Recent
+          </p>
+          {recentLogs.map((log) => (
+            <div
+              key={log.id}
+              className="flex items-center justify-between border-t border-border py-2.5 text-xs text-muted-foreground first:border-t-0"
+            >
+              <span>{log.focusName}</span>
+              <span className="tabular-data">
+                {log.durationSeconds ? `${Math.round(log.durationSeconds / 60)} min` : "—"} · Effort{" "}
+                {log.perceivedEffort ?? "—"}
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </div>

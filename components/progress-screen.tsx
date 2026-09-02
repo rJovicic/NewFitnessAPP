@@ -176,14 +176,14 @@ export function ProgressScreen({
       )}
 
       {weightSummary && (
-        <Card elevated>
-          <CardContent className="flex flex-col gap-4 p-5">
+        <Card elevated className="rounded-xl">
+          <CardContent className="flex flex-col gap-4 p-6">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Your progress
             </p>
             {weightSummary.currentWeightKg !== null ? (
               <div className="flex items-baseline gap-2">
-                <span className="tabular-data text-4xl font-semibold tracking-tight">
+                <span className="font-display text-6xl font-semibold leading-none tracking-tight">
                   {weightSummary.currentWeightKg.toFixed(1)}
                   <span className="text-lg font-normal text-muted-foreground"> kg</span>
                 </span>
@@ -271,7 +271,7 @@ export function ProgressScreen({
         </button>
 
         {measurements.some((m) => m.currentCm !== null) && (
-          <div className="grid grid-cols-3 gap-3 rounded-xl border border-border p-4">
+          <div className="grid grid-cols-3 gap-3 rounded-lg border border-border p-4">
             {measurements
               .filter((m) => m.currentCm !== null)
               .map((m) => (
@@ -430,7 +430,7 @@ function PhotoSlot({
       type="button"
       onClick={onPick}
       className={cn(
-        "relative flex w-full items-end overflow-hidden rounded-xl border border-border bg-muted text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+        "relative flex w-full items-end overflow-hidden rounded-lg border border-border bg-muted text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
         className
       )}
     >

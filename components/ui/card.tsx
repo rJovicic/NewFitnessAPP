@@ -1,6 +1,11 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+// Default radius is the "ordinary container" tier (rounded-lg, 18px) —
+// reserve rounded-xl (26px, the hero tier) for the one or two genuinely
+// hero surfaces per screen (pass it via className). Card itself stays a
+// deliberately plain primitive; most information on a screen shouldn't
+// reach for it at all — see the art-direction note atop globals.css.
 function Card({
   className,
   elevated = false,
@@ -10,7 +15,7 @@ function Card({
     <div
       data-slot="card"
       className={cn(
-        "rounded-xl border border-border bg-card text-card-foreground",
+        "rounded-lg border border-border bg-card text-card-foreground",
         elevated ? "border-transparent shadow-hero" : "shadow-none",
         className
       )}
