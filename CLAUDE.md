@@ -894,3 +894,76 @@ don't add a URL prefix — confirmed true in practice. The auth boundary is ther
   through the PR-to-main flow. Committed and pushed to
   `claude/fitness-app-ui-ux-redesign-kvsj7w`; no PR opened (the prompt explicitly said
   not to unless asked).
+- `2026-09-02` — User asked to push the above live. PR #9 opened (base `main`, no repo
+  PR template exists), Vercel's pre-merge check green, merged via GitHub MCP (`f78ff3a`).
+  **Same session, immediately after:** a "FINAL ART-DIRECTION RESET" master prompt —
+  explicit that the prior round's result still read as a generic SaaS dashboard, this
+  time referencing Apple Health / WHOOP as compositional/typographic benchmarks (not
+  branding to copy) and naming the actual root cause: the `bg-surface-sunken` tonal
+  boxes introduced two rounds ago to fix "sections blending together" had themselves
+  become the generic pattern — "a beige container is still a container." Branch
+  restarted from `origin/main` first (PR #9 merged, per the branch-reuse rule).
+  **Verified, not assumed:** the prompt flagged screenshots showing two different nav
+  styles (floating pill vs. edge-to-edge). Grepped the codebase first — `BottomNav` has
+  exactly one implementation, used in exactly one place (`layout.tsx`); `public/sw.js`
+  only caches icons/manifest, not HTML/JS, so it can't serve a stale nav either. No code
+  bug found — almost certainly a browser/PWA cache showing a pre-PR-#9 page. Left nav
+  structurally as-is this round (it already matches "edge-to-edge, integrated" from last
+  round) and reported this finding rather than changing working code speculatively.
+  **globals.css:** new `.text-label` utility consolidates the "text-xs font-medium
+  uppercase tracking-wide text-muted-foreground" stack that was being hand-typed in
+  every file (now systematized instead of ad hoc — mechanically swapped into 6 existing
+  files via `sed` after confirming via grep that every occurrence was a standalone,
+  unambiguous match). Added a second art-direction comment block documenting the reset:
+  Card/elevation is now reserved for genuinely floating surfaces (Sheet, AlertDialog)
+  only. **Home:** `CalorieHero` lost its `Card` wrapper entirely — the last hero card in
+  the app — now open content directly on the page; kept "eaten" as the headline DISPLAY
+  number over the prompt's own "target as headline" mock, a deliberate content call
+  (eaten is the number that actually moves through the day, target is static), noted
+  in-code. `app/(dashboard)/page.tsx`'s "Today" and "This week" `bg-surface-sunken`
+  boxes both removed — replaced with `border-t` + padding at the section level, so the
+  whole page is now one continuous flow (heading -> primary -> divider -> secondary ->
+  divider -> secondary) instead of card/box/card. **Progress:** the weight module's
+  `bg-surface-sunken` wrap (from last round) removed the same way; added a genuine
+  label-left/value-right "Goal" row (`text-label` + `tabular-data`, replacing the
+  inline "Goal {x} kg ... {pct}% toward goal" caption) per the prompt's explicit
+  aligned-column example — percent-to-goal moved to its own right-aligned caption under
+  the progress bar. Measurements and photos sections gained their own `border-t`
+  section rhythm to match. **Log:** meal slots rebuilt as a real timeline — a narrow
+  time column (`w-11`, tabular) leads each row instead of time-over-label stacked
+  inside a box; `bg-surface-sunken` removed entirely; planned-vs-logged distinction now
+  lives in text color/weight (planned items render in muted-foreground) plus the
+  existing checkmark, not in container styling. Cart/sheet/actions untouched. **Train:**
+  the active-view set tracker upgraded from plain dots to numbered chips (`01 02 03`,
+  filled/outline/current states) — the prompt's named "signature element" ask; "Exercise
+  N of M" reframed as zero-padded `EXERCISE 02 / 06` in tabular type. Overview list's
+  set-count indicator switched from thin bars to solid dots (`● ● ●`) to match the
+  prompt's own example and read as more clearly "set count" vs. "duration bar." Numbered
+  index chips and RestTimer's ring (functional live-countdown data, not decorative)
+  were kept as-is — already the right call per "cards only where they provide real
+  functional grouping." **Empty states:** `WeightChart`'s zero- and single-entry copy
+  rewritten to the prompt's own "Not enough data yet. Log 2–3 weigh-ins..." framing
+  (previously softer, still accurate but less direct); both states also switched from
+  centered to left-aligned to match the rest of the page's editorial-grid alignment.
+  Other `EmptyState` usages (recent foods, add-ons, progress photos, search) were
+  already intentional copy from earlier rounds — checked, not changed. **Settings:**
+  section labels switched to `.text-label`; otherwise left as-is per the prompt's own
+  acknowledgment it was already close — did **not** add fabricated Export-data/
+  Delete-data/Notifications rows just to match the mock's structure, consistent with
+  the standing "don't build settings that don't do anything" rule. **Not changed:**
+  Supabase schema, RLS, auth, `lib/macros.ts`, GF safety logic/three-state badge,
+  historical snapshot behavior, meal/workout logging actions, `nav-config.ts`,
+  `tile-registry.tsx`'s array structure, `addon-registry.ts` — verified by re-reading
+  every diff before commit. **Verification:** `npm run lint` and `npm run build` both
+  clean. **Not verified — same constraint as every prior session:** no real Supabase
+  credentials, `*.vercel.app` blocked by the egress proxy, no `playwright` binary — no
+  live render or device screenshots at any of the four requested viewports (390×844,
+  375×812, 393×852, 430×932), so the visual-differentiation self-check the prompt asks
+  for (compare against a generic dashboard / Apple Health / WHOOP) was done by reading
+  the resulting code and reasoning about composition, not by looking at a rendered
+  screen. This is the fourth design round in a row where that gap is the likely reason
+  the previous round still read as "generic" once actually seen — flagged to the user
+  directly: attaching a phone screenshot in a future message would let real visual
+  comparison happen instead of another blind round. Committed to
+  `claude/fitness-app-ui-ux-redesign-kvsj7w`; no PR opened per this prompt's explicit
+  "do NOT create a PR" instruction — user did not ask to push this round live.

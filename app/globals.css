@@ -28,10 +28,22 @@
  *
  * Surface/radius/shadow hierarchy: most surfaces are flat (border, no
  * shadow) — elevation and the largest radius are reserved for things
- * that are genuinely "above" the page (the calorie/weight hero, floating
- * nav, sheets, dialogs), per the "not a stack of floating white
- * rectangles" brief. Four radius tiers, not one flat value everywhere:
- * small controls -> buttons -> ordinary containers -> hero-only.
+ * that are genuinely "above" the page (sheets, dialogs) or that provide a
+ * real *interactive* grouping. Four radius tiers, not one flat value
+ * everywhere: small controls -> buttons -> ordinary containers -> hero.
+ *
+ * Art-direction RESET (2026-09, same month, later pass): rule 1 above
+ * turned out to still read as generic once a tonal bg-surface-sunken box
+ * replaced the bordered Card as the section-boundary device — a beige
+ * container is still a container. The calorie hero's Card and every
+ * remaining bg-surface-sunken section wrapper (Home's Today/This-week,
+ * Progress's weight module, Log's meal slots) were removed outright in
+ * favor of open composition: a bold section title (see SectionHeader),
+ * a thin border-t rule, and generous vertical whitespace do the grouping
+ * instead. Card/elevation is now reserved for genuinely floating surfaces
+ * (Sheet, AlertDialog) — nothing on Home, Log, Train, or Progress wraps
+ * its primary content in one anymore. See CLAUDE.md's session log entry
+ * for the full per-screen breakdown.
  */
 
 :root {
@@ -149,6 +161,23 @@
   .tabular-data {
     font-family: var(--font-data);
     font-variant-numeric: tabular-nums;
+  }
+
+  /* Art-direction reset (2026-09): typography, not containers, carries
+     hierarchy now — DISPLAY (hero numbers, font-display at size),
+     TITLE (font-display, section/page titles), LABEL (below), BODY
+     (default text-sm/text-foreground) and DATA (.tabular-data above).
+     .text-label consolidates the small-caps contextual label that used to
+     get re-typed as a Tailwind stack in every file — one definition, used
+     everywhere a section/field needs a quiet uppercase tag rather than a
+     box to establish itself. */
+  .text-label {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
   }
 
   /* Elevation ladder as utilities — reach for these deliberately, not by

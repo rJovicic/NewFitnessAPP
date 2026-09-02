@@ -78,7 +78,7 @@ export function RestTimer({
 
   return (
     <div className="flex flex-col items-center gap-6">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Rest</p>
+      <p className="text-label">Rest</p>
       <div className="relative size-[220px]">
         <svg
           width={SIZE}
@@ -112,7 +112,7 @@ export function RestTimer({
           </p>
           {nextExerciseName && (
             <div className="flex flex-col gap-0.5">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <p className="text-label">
                 Next
               </p>
               <p className="text-sm font-medium">{nextExerciseName}</p>

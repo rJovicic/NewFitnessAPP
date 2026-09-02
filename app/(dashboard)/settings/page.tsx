@@ -22,7 +22,7 @@ function SettingsSection({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-label">{label}</p>
       <div className="flex flex-col divide-y divide-border border-t border-border">{children}</div>
     </div>
   );

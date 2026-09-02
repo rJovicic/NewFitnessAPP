@@ -80,43 +80,44 @@ export default async function DashboardHome({
   const otherTiles = dashboardTiles.filter((tile) => !NAMED_TILE_IDS.has(tile.id));
 
   return (
-    <div className="flex flex-col gap-8">
+    // No wrapping cards or tonal boxes left — each section below carries
+    // its own border-t rule + vertical padding as the divider, so the
+    // page reads as one composed flow (heading -> primary -> divider ->
+    // secondary) rather than a stack of containers. See the art-direction
+    // reset note atop globals.css.
+    <div className="flex flex-col">
       <PageHeader title={`${greeting}, ${firstName}`} subtitle={dateLabel} />
       <DayStrip selectedDate={selectedDate} todayDate={todayDate} />
 
       <CalorieHero data={data} />
 
       {(waterTile || stepsTile) && (
-        <section className="flex flex-col gap-2 px-4">
+        <section className="flex flex-col border-t border-border px-4 pt-6 pb-6">
           {isToday && <SectionHeader title="Today" />}
-          <div className="flex flex-col rounded-lg bg-surface-sunken px-4">
-            {waterTile?.render(data)}
-            {stepsTile?.render(data)}
-          </div>
+          {waterTile?.render(data)}
+          {stepsTile?.render(data)}
         </section>
       )}
 
       {isToday && checklist && (
-        <section className="px-4">
+        <section className="border-t border-border px-4 pt-6 pb-6">
           <DailyChecklist data={checklist} />
         </section>
       )}
 
-      <section className="flex flex-col gap-2 px-4">
+      <section className="flex flex-col gap-4 border-t border-border px-4 pt-6 pb-8">
         <SectionHeader title="This week" />
-        <div className="flex flex-col rounded-lg bg-surface-sunken p-4">
-          {programProgressTile?.render(data)}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-4 mt-4">
-            {streakTile?.render(data)}
-            {moodTile?.render(data)}
-            {weeklySummaryTile?.render(data)}
-          </div>
-          <div className="border-t border-border">{fastingTile?.render(data)}</div>
+        {programProgressTile?.render(data)}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-4 border-t border-border pt-4">
+          {streakTile?.render(data)}
+          {moodTile?.render(data)}
+          {weeklySummaryTile?.render(data)}
         </div>
+        <div className="border-t border-border">{fastingTile?.render(data)}</div>
       </section>
 
       {otherTiles.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 px-4">
+        <div className="grid grid-cols-2 gap-3 border-t border-border px-4 pt-6">
           {otherTiles.map((tile) => (
             <div key={tile.id} className={tile.span === "full" ? "col-span-2" : ""}>
               {tile.render(data)}
