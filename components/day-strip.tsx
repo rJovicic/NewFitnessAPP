@@ -21,16 +21,20 @@ export function DayStrip({
         });
         const dayNumber = d.getUTCDate();
         const isSelected = dateStr === selectedDate;
+        const isToday = dateStr === todayDate;
 
         return (
           <Link
             key={dateStr}
             href={dateStr === todayDate ? "/" : `/?date=${dateStr}`}
+            aria-current={isSelected ? "date" : undefined}
             className={cn(
-              "flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-xs transition-colors",
+              "flex min-h-11 flex-1 flex-col items-center justify-center gap-1 rounded-full py-2 text-xs outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50",
               isSelected
                 ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted"
+                : isToday
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:bg-muted"
             )}
           >
             <span>{label}</span>

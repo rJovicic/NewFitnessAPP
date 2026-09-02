@@ -1,14 +1,4 @@
-import { cn } from "@/lib/utils";
-
-type MacroColor = "protein" | "carbs" | "fat" | "water" | "steps";
-
-const FILL_CLASS: Record<MacroColor, string> = {
-  protein: "bg-protein",
-  carbs: "bg-carbs",
-  fat: "bg-fat",
-  water: "bg-water",
-  steps: "bg-steps",
-};
+import { Progress, type ProgressTone } from "@/components/ui/progress";
 
 export function MacroBar({
   label,
@@ -18,7 +8,7 @@ export function MacroBar({
   unit,
 }: {
   label: string;
-  color: MacroColor;
+  color: ProgressTone;
   current: number;
   target: number;
   unit: string;
@@ -31,15 +21,13 @@ export function MacroBar({
         <span className="text-sm font-medium">{label}</span>
         <span className="tabular-data text-xs text-muted-foreground">
           {Math.round(current)}
-          <span className="text-muted-foreground">/{Math.round(target)}{unit}</span>
+          <span className="text-muted-foreground">
+            /{Math.round(target)}
+            {unit}
+          </span>
         </span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-        <div
-          className={cn("h-full rounded-full transition-all duration-500", FILL_CLASS[color])}
-          style={{ width: `${fraction * 100}%` }}
-        />
-      </div>
+      <Progress value={fraction} tone={color} />
     </div>
   );
 }

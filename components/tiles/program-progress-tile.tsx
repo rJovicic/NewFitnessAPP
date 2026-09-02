@@ -1,5 +1,6 @@
 import { Target } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { MetricCard } from "@/components/fitness/metric-card";
 import { getProgramProgress } from "@/app/(dashboard)/program-progress/actions";
 
 // Self-contained: fetches its own data, so wiring this in touched only
@@ -9,33 +10,24 @@ export async function ProgramProgressTile() {
   if (!progress) return null;
 
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-2">
-        <div className="flex items-center gap-1.5 text-protein">
-          <Target className="size-4" strokeWidth={2} />
-          <span className="text-sm font-medium text-foreground">Program progress</span>
+    <MetricCard
+      tone="protein"
+      icon={Target}
+      label="Program progress"
+      value={`Week ${progress.weekNumber}`}
+      unit={`/ ~${progress.totalWeeks}`}
+      footer={
+        <div className="flex flex-col gap-1.5">
+          <Progress value={progress.percentToGoal / 100} tone="protein" />
+          <p className="text-xs text-muted-foreground">
+            {progress.weightLostKg > 0 ? `${progress.weightLostKg}kg lost` : "Just started"}
+            {" · "}
+            {progress.weightRemainingKg > 0
+              ? `${progress.weightRemainingKg}kg to goal`
+              : "At goal weight"}
+          </p>
         </div>
-        <p className="tabular-data text-2xl font-semibold">
-          Week {progress.weekNumber}
-          <span className="text-sm font-normal text-muted-foreground">
-            {" "}
-            / ~{progress.totalWeeks}
-          </span>
-        </p>
-        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-protein"
-            style={{ width: `${progress.percentToGoal}%` }}
-          />
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {progress.weightLostKg > 0 ? `${progress.weightLostKg}kg lost` : "Just started"}
-          {" · "}
-          {progress.weightRemainingKg > 0
-            ? `${progress.weightRemainingKg}kg to goal`
-            : "At goal weight"}
-        </p>
-      </CardContent>
-    </Card>
+      }
+    />
   );
 }

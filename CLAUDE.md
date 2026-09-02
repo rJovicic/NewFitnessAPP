@@ -86,10 +86,17 @@ pastel stat cards, bottom tab nav, day-strip selectors). Direction:
 
 - **Aesthetic:** clean modern health/wellness app. Light theme. Soft, semantic pastel
   colors per data type (not one generic purple gradient) — e.g. distinct hues for
-  calories, protein, carbs, fat, water, steps.
-- **Layout:** circular progress ring for daily calorie budget as the dashboard centerpiece,
-  card-grid below for macros/water/steps/streak, bottom tab bar for primary nav
-  (Home / Log / Train / Progress / Settings), horizontal day-strip for date selection.
+  calories, protein, carbs, fat, water, steps. Since the redesign (see session log), the
+  hue lives on the metric card's *surface* (`bg-{metric}-soft` tokens in
+  `app/globals.css`), not just an icon/ring accent — `components/fitness/metric-card.tsx`
+  is the shared primitive for this.
+- **Layout:** the calorie ring and macro bars are fused into one hero surface
+  (`components/calorie-hero.tsx`), not a ring plus a separate macros card. Bottom nav is
+  a floating pill (`components/bottom-nav.tsx`) with 4 primary tabs (Home / Log / Train /
+  Progress) — Mood and Settings live in a "More" sheet rather than crowding the primary
+  bar; `lib/nav-config.ts` still drives both via a `primary: boolean` flag, so it's still
+  the one place a new nav entry goes. Horizontal day-strip (now pill-styled) for date
+  selection.
 - **Explicitly avoid:** default "Inter font + purple gradient + rounded card" AI-generated
   look. Pick an actual typography pairing and commit to it.
 - **Mobile is the only target for MVP.** Design and test at a 390×844 viewport
@@ -162,19 +169,16 @@ prior builds. The structure below exists specifically to prevent that here.
 ## Parking Lot
 *(enhancement ideas noticed mid-build, not yet approved — proposed at next STOP gate)*
 
-- Edit/delete a logged meal (currently no way to remove a mistaken scan/log from the Log screen).
-- "Recently scanned" quick-add list so re-logging a frequently-eaten packaged product
-  doesn't require re-scanning the barcode every time.
-- Visual refresh toward the original reference screenshots (`docs/design-references/
-  ref-1..4.jpeg` — user re-sent the same 4 images mid-Phase-5 asking about a "full
-  makeover"; confirmed identical files, so no new direction, just a reminder these were
-  the brief). Current app already matches their structure (ring + 2-col stat grid + day
-  strip + bottom nav); the gap is saturation and a couple of surface details. User chose
-  to fold this into the existing Phase 10 polish pass rather than interrupt phase
-  progression. Concretely, for that pass: (1) tinted pastel card *backgrounds* per metric
-  instead of neutral cards with just a colored icon/ring accent, (2) consider a floating
-  rounded-pill bottom nav instead of the current flat bordered bar, (3) food-item photo
-  thumbnails are a bigger lift (needs an image source) — lowest priority of the three.
+- Food-item photo thumbnails in the Log timeline (needs an image source — OFF product
+  images are inconsistent/low-res across the local `foods` cache; would need a fallback
+  for manually-created foods too). Split off from the older "visual refresh" parking-lot
+  item below, which the UI/UX redesign session otherwise completed in full.
+- Progress-photo date comparison (pick two dates side by side) — the redesign session
+  built the "current set" comparison layout (front large + side/back pair) but not
+  historical two-date comparison; noted as a possible follow-up, not built.
+- Multi-item "cart" meal logging (add several foods to one meal_log in one sitting)
+  was intentionally dropped during the redesign in favor of one-tap single-item logging
+  (see session log below) — flagging in case daily use shows a real need for it back.
 
 ## Known environment constraint (dev sandbox only, not the deployed app)
 
@@ -582,3 +586,71 @@ don't add a URL prefix — confirmed true in practice. The auth boundary is ther
   still sitting in the Parking Lot above pending explicit approval.
   Build verified clean (`npm run build`) before commit. Next: pending
   user go-ahead on the visual refresh or further feature requests.
+- `2026-09-02` — Full UI/UX redesign pass (explicitly requested this session — a master
+  prompt covering design system, navigation, and all 6 screens). Preserved the existing
+  architecture/data model/business rules per its own instructions; this was a visual and
+  interaction pass, not a rewrite. **Design foundation:** `app/globals.css` gained a
+  surface/radius/shadow hierarchy — `--{metric}-soft` tinted-surface tokens, a
+  control/card/hero radius scale (10px/16px/22px, replacing the single flat `--radius`),
+  a `shadow-hero/nav/sheet/dialog` elevation ladder (most surfaces stay flat/bordered —
+  elevation is reserved for the calorie hero, floating nav, and sheets), and a global
+  `prefers-reduced-motion` guard. New primitives: `components/ui/{badge,progress,sheet,
+  segmented-control,skeleton,input}.tsx` (hand-written, no new Radix dependency — same
+  pattern as the Phase 0 Button/Card) and `components/fitness/{page-header,section-header,
+  metric-card,stat-row,empty-state,quantity-stepper}.tsx`. `components/ui/button.tsx` and
+  `card.tsx` were revised in place (44px default touch targets, `Card`'s `elevated` prop
+  replacing the old always-on `shadow-sm`). **Navigation:** `lib/nav-config.ts` gained a
+  `primary: boolean` field (registry preserved, not replaced); `components/bottom-nav.tsx`
+  is now a floating pill nav with the 4 primary tabs plus a "More" sheet for Mood/Settings.
+  The old blanket `DashboardHeader` (same copy on every route) was deleted in favor of
+  per-route `<PageHeader>` calls — Home's greeting, Log's "Food", Train's workout name,
+  Progress's "Your progress", Settings' plain title. **Home:** `components/calorie-hero.tsx`
+  fuses the ring + macro bars into one hero card; the tile grid now reads water/steps/
+  streak/mood → checklist → weekly-summary/program-progress/fasting (checklist itself
+  gained a "N of 5 complete" header + progress bar); added `components/tiles/steps-tile.tsx`
+  to the registry (steps had data but no tile before). **Log:** rebuilt as a meal timeline
+  grouped by the 5 plan slots, each with its own "+ Add food" trigger opening
+  `<Sheet>` (debounced 300ms search, a new "Recent" quick-add list, barcode scan, manual
+  fallback, `<QuantityStepper>` instead of a bare number input). Logging was deliberately
+  simplified from "build a multi-item cart, save as one meal_log" to one-tap
+  single-item logging (still calls the same `logMeal`/`logPlanMeal` actions) — noted in
+  Parking Lot in case that's a step back for some real usage pattern. This closes two
+  long-standing Parking Lot items: added `deleteMealLog()` (handles both plan- and
+  custom-sourced logs, decrements `meals_logged_count` and re-runs
+  `recomputeFastingHonored()` when the deleted entry was today's, mirroring
+  `finishMealLogging()` in reverse — the doc comment in `lib/daily-activity.ts` had been
+  anticipating exactly this since Phase 3) and added `getRecentFoods()` (dedupes the
+  latest `meal_items` by food, no migration). **Train:** active-workout view now shows an
+  overall set-progress bar, a collapsible `<details>` "How to" section surfacing
+  `exercises.instructions` (previously fetched but never rendered), and a completion
+  screen with a checkmark + duration/exercise/set summary; `RestTimer` is now a radial
+  ring (same SVG-arc technique as `CalorieRing`) instead of bare digits. **Progress:**
+  added a hero card (current weight, ↓/↑ delta, goal, %-to-goal bar, lost/to-goal/avg-
+  per-week stats) backed by two new `progress/actions.ts` functions —
+  `getWeightSummary()` (reuses `computeProgramProgress()` rather than re-deriving
+  lost/remaining/percent, which required adding a `daysElapsed` field to
+  `ProgramProgress`) and `getMeasurementStats()` (scans sparse `body_measurements` rows
+  for the latest value and the one before it, per field, since a session might not fill
+  in every field). `WeightChart` gained a 7D/30D/90D/ALL timeframe `<SegmentedControl>`
+  (client-side date filtering over one full-history fetch, no extra round-trip). Photos
+  now show a front-large/side-back-pair comparison layout instead of three flat buttons
+  plus a scroll strip. **Mood/Settings:** mood check-in is now emoji+number
+  (😞😕😐🙂😄); Settings is now sectioned (Account/Plan/Data/App/Add-ons) — added a
+  read-only "Nutrition targets" row (reuses `getDashboardData()`, no new calculation)
+  and informational Health-data/Install-app rows; deliberately did **not** add a
+  Notifications section since no push infrastructure exists — the master prompt itself
+  says not to fabricate settings that don't do anything. **Verification:** `npm run
+  build` and `npm run lint` both clean (one pre-existing `react-hooks/set-state-in-effect`
+  lint error in `fasting-tile.tsx`, unrelated to this pass but now fixed since it blocked
+  a clean `lint` run — the initial `setNow()` call moved into a `requestAnimationFrame`
+  callback, same pattern `CalorieRing`'s mount animation already used). **What was not
+  verified:** this sandbox instance has no `.env.local`/Supabase credentials and no
+  network access to `*.vercel.app` (same documented constraint as every prior session),
+  so no Playwright screenshot pass or live-auth click-through happened — this is a code-
+  complete, build-clean, lint-clean redesign that has **not** been visually confirmed
+  against the running app. The master prompt's Phase J (390×844 + 3 other viewports,
+  overflow/clipping/safe-area checks) still needs to happen on a real device or a
+  session with working credentials before calling this fully done. Committed to
+  `claude/fitness-app-ui-ux-redesign-kvsj7w` and pushed; no PR opened (not requested this
+  session). Next: user should eyeball the live app on their phone per the usual pattern,
+  flag anything that reads wrong, then this branch can go through the PR-to-main flow.

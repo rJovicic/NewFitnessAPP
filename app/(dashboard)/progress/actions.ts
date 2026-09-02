@@ -8,6 +8,7 @@ import {
   type AdjustmentSuggestion,
   type AdjustmentType,
 } from "@/lib/adjustment";
+import { computeProgramProgress } from "@/lib/program-progress";
 
 export async function logWeight(input: {
   dateStr: string;
@@ -181,6 +182,118 @@ export async function getWeightHistory(daysBack = 90): Promise<WeightPoint[]> {
     const rollingAvgKg =
       windowPoints.reduce((sum, w) => sum + w, 0) / windowPoints.length;
     return { date: row.date, weightKg: row.weightKg, rollingAvgKg };
+  });
+}
+
+export interface WeightSummary {
+  currentWeightKg: number | null;
+  startingWeightKg: number;
+  goalWeightKg: number;
+  weightLostKg: number;
+  weightRemainingKg: number;
+  percentToGoal: number;
+  avgKgPerWeek: number;
+}
+
+// Reuses computeProgramProgress (lib/program-progress.ts) rather than
+// re-deriving lost/remaining/percent — this just adds the raw
+// current/starting/goal weight numbers the Progress hero needs on top.
+export async function getWeightSummary(): Promise<WeightSummary | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("program_start_date, starting_weight_kg, goal_weight_kg")
+    .eq("id", user.id)
+    .single();
+  if (!profile) return null;
+
+  const { data: latestWeight } = await supabase
+    .from("weight_logs")
+    .select("weight_kg")
+    .eq("profile_id", user.id)
+    .order("logged_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const currentWeightKg = latestWeight ? Number(latestWeight.weight_kg) : null;
+  const progress = computeProgramProgress(
+    profile.program_start_date,
+    todayInAppTimezone(),
+    profile.starting_weight_kg,
+    profile.goal_weight_kg,
+    currentWeightKg ?? profile.starting_weight_kg
+  );
+
+  const weeksElapsed = progress.daysElapsed / 7;
+  const avgKgPerWeek =
+    weeksElapsed >= 1 ? Math.round((progress.weightLostKg / weeksElapsed) * 100) / 100 : 0;
+
+  return {
+    currentWeightKg,
+    startingWeightKg: Number(profile.starting_weight_kg),
+    goalWeightKg: Number(profile.goal_weight_kg),
+    weightLostKg: progress.weightLostKg,
+    weightRemainingKg: progress.weightRemainingKg,
+    percentToGoal: progress.percentToGoal,
+    avgKgPerWeek,
+  };
+}
+
+export interface MeasurementStat {
+  key: "waist" | "chest" | "hips" | "biceps" | "thigh";
+  label: string;
+  currentCm: number | null;
+  deltaCm: number | null;
+}
+
+const MEASUREMENT_FIELDS = [
+  { column: "waist_cm", key: "waist", label: "Waist" },
+  { column: "chest_cm", key: "chest", label: "Chest" },
+  { column: "hips_cm", key: "hips", label: "Hips" },
+  { column: "biceps_cm", key: "biceps", label: "Biceps" },
+  { column: "thigh_cm", key: "thigh", label: "Thigh" },
+] as const;
+
+// Body measurements are logged as sparse rows (a session might only fill
+// in a couple of fields) — this scans the recent history per field for
+// the latest value and the one before it, rather than assuming any two
+// consecutive rows both have every field populated.
+export async function getMeasurementStats(): Promise<MeasurementStat[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("body_measurements")
+    .select("logged_at, waist_cm, chest_cm, hips_cm, biceps_cm, thigh_cm")
+    .eq("profile_id", user.id)
+    .order("logged_at", { ascending: false })
+    .limit(20);
+
+  const rows = data ?? [];
+
+  return MEASUREMENT_FIELDS.map(({ column, key, label }) => {
+    const values = rows
+      .map((r) => r[column as keyof typeof r])
+      .filter((v): v is number => v !== null && v !== undefined)
+      .map(Number);
+    const [current, previous] = values;
+    return {
+      key,
+      label,
+      currentCm: current ?? null,
+      deltaCm:
+        current !== undefined && previous !== undefined
+          ? Math.round((current - previous) * 10) / 10
+          : null,
+    };
   });
 }
 

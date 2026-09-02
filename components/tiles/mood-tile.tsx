@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Smile } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { MetricCard } from "@/components/fitness/metric-card";
 import { getTodaysMood } from "@/app/(dashboard)/mood/actions";
 
 // Self-contained: fetches its own data via the add-on's own action, so
@@ -9,16 +9,8 @@ export async function MoodTile() {
   const mood = await getTodaysMood();
 
   return (
-    <Link href="/mood">
-      <Card>
-        <CardContent className="flex flex-col gap-2">
-          <div className="flex items-center gap-1.5 text-steps">
-            <Smile className="size-4" strokeWidth={2} />
-            <span className="text-sm font-medium text-foreground">Mood</span>
-          </div>
-          <p className="tabular-data text-2xl font-semibold">{mood !== null ? `${mood}/5` : "—"}</p>
-        </CardContent>
-      </Card>
+    <Link href="/mood" className="block rounded-xl focus-visible:outline-2 focus-visible:outline-ring">
+      <MetricCard tone="steps" icon={Smile} label="Mood" value={mood !== null ? mood : "—"} unit={mood !== null ? "/5" : undefined} />
     </Link>
   );
 }

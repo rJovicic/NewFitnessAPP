@@ -158,6 +158,7 @@ export interface PlanMealEntry {
   mealType: string;
   food: FoodResult;
   isLogged: boolean;
+  loggedMealLogId: string | null;
 }
 
 export async function getTodaysPlanMeals(): Promise<PlanMealEntry[]> {
@@ -173,17 +174,19 @@ export async function getTodaysPlanMeals(): Promise<PlanMealEntry[]> {
     .select("id, meal_type, foods(*)")
     .eq("weekday", weekday);
 
-  let loggedPlanMealIds = new Set<string>();
+  const loggedPlanMealLogIds = new Map<string, string>();
   if (user) {
     const { start, end } = zonedDayRangeUtc(dateStr);
     const { data: todaysPlanLogs } = await supabase
       .from("meal_logs")
-      .select("plan_day_ref")
+      .select("id, plan_day_ref")
       .eq("profile_id", user.id)
       .eq("source", "plan")
       .gte("logged_at", start.toISOString())
       .lt("logged_at", end.toISOString());
-    loggedPlanMealIds = new Set((todaysPlanLogs ?? []).map((l) => l.plan_day_ref));
+    for (const log of todaysPlanLogs ?? []) {
+      if (log.plan_day_ref) loggedPlanMealLogIds.set(log.plan_day_ref, log.id);
+    }
   }
 
   return (data ?? [])
@@ -192,8 +195,43 @@ export async function getTodaysPlanMeals(): Promise<PlanMealEntry[]> {
       id: row.id,
       mealType: row.meal_type,
       food: toFoodResult(row.foods as unknown as FoodRow),
-      isLogged: loggedPlanMealIds.has(row.id),
+      isLogged: loggedPlanMealLogIds.has(row.id),
+      loggedMealLogId: loggedPlanMealLogIds.get(row.id) ?? null,
     }));
+}
+
+export interface RecentFood extends FoodResult {
+  lastQuantityG: number;
+}
+
+// Powers the Log screen's "Recent" quick-add list — capped scan over the
+// most recently created meal_items, deduped by food, rather than a
+// separate materialized-view/RPC for what's a small convenience feature.
+export async function getRecentFoods(limit = 10): Promise<RecentFood[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("meal_items")
+    .select("food_id, quantity_g, created_at, foods(*), meal_logs!inner(profile_id)")
+    .eq("meal_logs.profile_id", user.id)
+    .not("food_id", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(60);
+
+  const seen = new Set<string>();
+  const results: RecentFood[] = [];
+  for (const row of data ?? []) {
+    const food = row.foods as unknown as FoodRow | null;
+    if (!food || seen.has(food.id)) continue;
+    seen.add(food.id);
+    results.push({ ...toFoodResult(food), lastQuantityG: Number(row.quantity_g) });
+    if (results.length >= limit) break;
+  }
+  return results;
 }
 
 export interface LoggedCustomMealItem {
@@ -397,5 +435,70 @@ export async function logMeal(
   if (itemsError) return { ok: false, message: "Couldn't save the items. Try again." };
 
   await finishMealLogging(supabase, user.id);
+  return { ok: true };
+}
+
+// Removes a whole logged meal entry (plan-sourced or custom) — its
+// meal_items cascade-delete with it (migration 0001). Corrects
+// daily_activity.meals_logged_count and re-derives the fasting-honored
+// flag for whichever local day the entry belonged to, mirroring
+// finishMealLogging's bookkeeping in reverse. Closes the CLAUDE.md
+// Parking Lot item: "no way to remove a mistaken scan/log."
+export async function deleteMealLog(
+  mealLogId: string
+): Promise<{ ok: boolean; message?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, message: "Not signed in." };
+
+  const { data: log } = await supabase
+    .from("meal_logs")
+    .select("id, logged_at")
+    .eq("id", mealLogId)
+    .eq("profile_id", user.id)
+    .maybeSingle();
+  if (!log) return { ok: false, message: "Couldn't find that entry." };
+
+  const { error } = await supabase.from("meal_logs").delete().eq("id", mealLogId);
+  if (error) return { ok: false, message: "Couldn't delete. Try again." };
+
+  const loggedDate = todayInAppTimezone(new Date(log.logged_at));
+  const today = todayInAppTimezone();
+
+  if (loggedDate === today) {
+    const { data: existing } = await supabase
+      .from("daily_activity")
+      .select("meals_logged_count")
+      .eq("profile_id", user.id)
+      .eq("activity_date", today)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from("daily_activity")
+        .update({ meals_logged_count: Math.max((existing.meals_logged_count ?? 1) - 1, 0) })
+        .eq("profile_id", user.id)
+        .eq("activity_date", today);
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("eating_window_start, eating_window_end")
+      .eq("id", user.id)
+      .single();
+    if (profile) {
+      await recomputeFastingHonored(
+        user.id,
+        today,
+        profile.eating_window_start,
+        profile.eating_window_end
+      );
+    }
+  }
+
+  revalidatePath("/");
+  revalidatePath("/log");
   return { ok: true };
 }
