@@ -105,12 +105,14 @@ pastel stat cards, bottom tab nav, day-strip selectors). Direction:
   weight hero, opted into explicitly via `className="rounded-xl"`).
 - **Layout:** the calorie hero (`components/calorie-hero.tsx`) is a large `EATEN` number
   + thin progress rule + target/remaining pair + macro rows — not a circular ring
-  (the old `CalorieRing` component was retired). Bottom nav is a floating pill
-  (`components/bottom-nav.tsx`) with 4 primary tabs (Home / Log / Train / Progress) —
-  Mood and Settings live in a "More" sheet rather than crowding the primary bar;
-  `lib/nav-config.ts` still drives both via a `primary: boolean` flag, so it's still
-  the one place a new nav entry goes. Horizontal day-strip (pill-styled) for date
-  selection.
+  (the old `CalorieRing` component was retired). Bottom nav (`components/bottom-nav.tsx`)
+  is an edge-to-edge tab bar (hairline top border, page-matched background) — **not**
+  a floating inset pill anymore, see the 2026-09-02 "TRUE VISUAL REDESIGN" session log
+  entry — with 4 primary tabs (Home / Log / Train / Progress); active state is a thin
+  top accent bar + icon/label color change, never a filled pill background. Mood and
+  Settings live in a "More" sheet rather than crowding the primary bar; `lib/nav-config.ts`
+  still drives both via a `primary: boolean` flag, so it's still the one place a new nav
+  entry goes. Horizontal day-strip (pill-styled) for date selection.
 - **Explicitly avoid:** default "Inter font + purple gradient + rounded card" AI-generated
   look, and — per the art-direction pass — "card → card → card" composition, uniform
   giant border-radius on every container, and pastel-tile-as-default-surface.
@@ -824,3 +826,71 @@ don't add a URL prefix — confirmed true in practice. The auth boundary is ther
   `claude/fitness-app-ui-ux-redesign-kvsj7w`; no PR opened this round (not requested —
   this message was design feedback only, unlike the prior two rounds which had an
   explicit separate "push live" follow-up).
+- `2026-09-02` — PR #8 (visual refinement pass above) merged to `main`, user asked to push
+  live. **Same session, immediately after:** a much more aggressive follow-up master
+  prompt — "TRUE VISUAL REDESIGN / NOT A POLISH PASS. REBUILD THE VISUAL COMPOSITION" —
+  attaching the same 4 reference apps (Apple Fitness, a Gentler-Streak-style app,
+  MacroFactor, Hevy) but this time framed as a compositional benchmark, not a surface
+  one: the prompt stated outright that the prior two rounds (section labels + tonal
+  containment) were insufficient and explicitly authorized reorganizing section
+  order/grouping/card-vs-non-card treatment/density, while still requiring the same
+  preserved list (business rules, macros, GF safety, schema, RLS, snapshot logging,
+  auth, workout/meal-logging logic). It named Train "the biggest visual opportunity"
+  and called Progress's prior hero+chart pairing "two large empty cards." Branch
+  restarted from `origin/main` first (PR #8 was merged, per the branch-reuse rule).
+  **Bottom nav** (`components/bottom-nav.tsx`): replaced the floating inset rounded-full
+  pill with an edge-to-edge tab bar (`border-t`, page-matched `bg-background/95`
+  backdrop-blur) — active state is now a thin top accent bar + icon/label color change,
+  never a filled pill background; `app/(dashboard)/layout.tsx`'s bottom padding tightened
+  `pb-28` → `pb-24` to match the shorter bar. Directly answers the prompt's "feels placed
+  ON TOP rather than integrated" critique; `lib/nav-config.ts` and the More-sheet mechanism
+  untouched. **Home:** `components/macro-bar.tsx` rows gained a small per-macro color dot
+  (CSS var-driven, matches the metric's semantic hue) next to each label — a MacroFactor-
+  style touch that strengthens the hero's data identity without reintroducing a ring
+  (the ring-retirement decision from the prior art-direction round stands, this prompt
+  didn't ask to revisit it). `StreakTile`/`MoodTile`/`WeeklySummaryTile`'s stat blocks in
+  the "This week" grid gained a thin colored left-accent border (fat/water/protein/carbs)
+  instead of a uniform look, so the 2×2 grid reads as color-coded stats, not identical
+  boxes. **Log:** meal slots now visually distinguish planned-vs-actual — a slot with
+  nothing left pending (everything already logged) recedes to a plain divider row with
+  a small checkmark, while a slot still needing action keeps the `bg-surface-sunken`
+  emphasis; previously every slot got the same tonal box regardless of state. Cart/sheet
+  logic completely untouched. **Train (the prompt's named priority):** the exercise
+  overview list was rebuilt as Hevy-style numbered modules — each exercise gets a colored
+  circular index chip (cycling the existing 6 semantic tones by position, since no
+  muscle-group→color mapping exists in the data — documented in-code as deliberately not
+  fabricated metadata) plus a set-count bar strip under the name/reps row. The active-set
+  view gained a small set-tracker dot row (done/current/pending) beneath the "Set X of Y"
+  caption. "Start workout" is now a sticky bottom CTA with a fade gradient, Hevy's
+  floating-action-bar pattern. Recent workout rows gained a `Dumbbell`-icon chip for
+  module consistency with the overview list above them. All `train/actions.ts` logic
+  (`getTodaysWorkout`/`logWorkout`/`getRecentWorkoutLogs`) untouched. **Progress:** fixed
+  the literal "two large cards" the prompt called out — the weight-hero `Card` and the
+  separately-boxed chart `Card` are now ONE continuous `bg-surface-sunken` module (big
+  number → delta-to-goal → percent-to-goal rule → chart → quick-log input → Lost/Avg
+  stats), replacing the old `SectionHeader title="Weight"` + wrapping `Card` pattern.
+  Body-measurements' bordered stat-grid box was flattened to a plain grid (no border/bg),
+  consistent with "most information sits directly on the page." Copy on the zero-data
+  chart state changed to "start building your trend," matching the prompt's requested
+  framing. All `progress/actions.ts` logic untouched. **Settings:** the 5 stacked
+  `Card`-wrapped sections (Account/Plan/Data/App/Add-ons) were flattened to plain
+  section-label + `divide-y` row lists (no card wrapper at all) — this was the most
+  literal instance of the prompt's named failure mode ("card → card → card → nav")
+  anywhere in the app, now fixed; `Card` import removed from `settings/page.tsx` since
+  nothing there uses it anymore. Mood page was already bare/card-free and needed no
+  change. **Not changed / explicitly out of scope this round:** GF three-state badge/
+  disclaimer, `lib/macros.ts`, RLS, schema, snapshot-logging semantics, workout
+  progression math, `lib/tile-registry.tsx`'s array structure (only what each tile
+  renders internally changed, same extension-point discipline as every prior round).
+  **Verification:** `npm run lint` and `npm run build` both clean, re-run after every
+  batch of changes and once more at the end. **Not verified — same constraint as every
+  prior session:** no real Supabase credentials beyond the placeholder `.env.local`,
+  `*.vercel.app` blocked by the egress proxy, no `playwright` binary — no live render,
+  no device screenshots at any viewport. This is a code-complete, build-clean, lint-clean
+  compositional redesign verified by reading the resulting code, not by rendering it;
+  real-device visual QA against the 4 reference apps (the prompt's own explicit ask) is
+  still outstanding — user should eyeball Home/Log/Train/Progress/Settings on their phone,
+  especially the new edge-to-edge nav and Train's active-set view, before this goes
+  through the PR-to-main flow. Committed and pushed to
+  `claude/fitness-app-ui-ux-redesign-kvsj7w`; no PR opened (the prompt explicitly said
+  not to unless asked).

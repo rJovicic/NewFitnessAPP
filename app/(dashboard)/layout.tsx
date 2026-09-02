@@ -18,7 +18,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-svh flex-col">
-      <main className="flex-1 pb-28">{children}</main>
+      <main className="flex-1 pb-24">{children}</main>
       <BottomNav />
     </div>
   );

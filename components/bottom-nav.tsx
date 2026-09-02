@@ -29,26 +29,35 @@ export function BottomNav() {
 
   return (
     <>
+      {/* Edge-to-edge tab bar, not a floating inset pill — a hairline top
+          border and page-matched background read as part of the app shell
+          (per the Apple Fitness/Hevy/MacroFactor reference set) rather than
+          a control placed on top of the content. Active state is carried by
+          a top accent bar + icon/label color, never a filled pill. */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-20 flex justify-center px-4"
-        style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 backdrop-blur supports-backdrop-blur:bg-background/80"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <ul className="flex items-stretch gap-0.5 rounded-full border border-border/60 bg-card/95 p-1.5 shadow-nav backdrop-blur supports-backdrop-blur:bg-card/80">
+        <ul className="mx-auto flex max-w-md items-stretch">
           {primaryItems.map((item) => {
             const active = isActivePath(pathname, item.href);
             const Icon = item.icon;
             return (
-              <li key={item.href}>
+              <li key={item.href} className="flex-1">
                 <Link
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex min-w-16 flex-col items-center justify-center gap-0.5 rounded-full px-3 py-2 text-[11px] font-medium outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50",
-                    active
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
+                    "relative flex min-h-14 w-full flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-medium outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset",
+                    active ? "text-foreground" : "text-muted-foreground"
                   )}
                 >
+                  {active && (
+                    <span
+                      className="absolute inset-x-6 top-0 h-0.5 rounded-full bg-primary"
+                      aria-hidden="true"
+                    />
+                  )}
                   <Icon className="size-5" strokeWidth={active ? 2.25 : 1.75} />
                   {item.label}
                 </Link>
@@ -56,19 +65,23 @@ export function BottomNav() {
             );
           })}
           {moreItems.length > 0 && (
-            <li>
+            <li className="flex-1">
               <button
                 type="button"
                 onClick={() => setMoreOpen(true)}
                 aria-haspopup="true"
                 aria-expanded={moreOpen}
                 className={cn(
-                  "flex min-w-16 flex-col items-center justify-center gap-0.5 rounded-full px-3 py-2 text-[11px] font-medium outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50",
-                  isMoreActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                  "relative flex min-h-14 w-full flex-col items-center justify-center gap-1 py-2.5 text-[11px] font-medium outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset",
+                  isMoreActive ? "text-foreground" : "text-muted-foreground"
                 )}
               >
+                {isMoreActive && (
+                  <span
+                    className="absolute inset-x-6 top-0 h-0.5 rounded-full bg-primary"
+                    aria-hidden="true"
+                  />
+                )}
                 <MoreHorizontal className="size-5" strokeWidth={isMoreActive ? 2.25 : 1.75} />
                 More
               </button>

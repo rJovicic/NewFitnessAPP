@@ -175,13 +175,17 @@ export function ProgressScreen({
         </section>
       )}
 
-      {weightSummary && (
-        <Card elevated className="rounded-xl">
-          <CardContent className="flex flex-col gap-4 p-6">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Your progress
-            </p>
-            {weightSummary.currentWeightKg !== null ? (
+      {/* One continuous data-viz-first module — number, trend and stats
+          flow together rather than sitting in two stacked bordered cards
+          (a weight hero card + a separate chart card), per the "not two
+          large empty cards" direction. */}
+      <section className="flex flex-col gap-5 rounded-lg bg-surface-sunken p-4">
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Your progress
+          </p>
+          {weightSummary?.currentWeightKg != null ? (
+            <>
               <div className="flex flex-col gap-1">
                 <span className="font-display text-6xl font-semibold leading-none tracking-tight">
                   {weightSummary.currentWeightKg.toFixed(1)}
@@ -193,44 +197,23 @@ export function ProgressScreen({
                     : "Goal reached"}
                 </span>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">Log a weigh-in to see your trend.</p>
-            )}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-baseline justify-between text-xs text-muted-foreground">
-                <span>Goal {weightSummary.goalWeightKg.toFixed(1)} kg</span>
-                <span className="tabular-data">{weightSummary.percentToGoal}% toward goal</span>
+              <div className="flex flex-col gap-1.5 pt-1">
+                <div className="flex items-baseline justify-between text-xs text-muted-foreground">
+                  <span>Goal {weightSummary.goalWeightKg.toFixed(1)} kg</span>
+                  <span className="tabular-data">{weightSummary.percentToGoal}% toward goal</span>
+                </div>
+                <Progress value={weightSummary.percentToGoal / 100} tone="calories" trackClassName="h-1" />
               </div>
-              <Progress value={weightSummary.percentToGoal / 100} tone="calories" />
-            </div>
-            <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
-              <StatRow label="Lost" value={`${weightSummary.weightLostKg.toFixed(1)} kg`} />
-              <StatRow
-                label={
-                  weightSummary.avgKgPerWeek > 0
-                    ? "Avg. loss"
-                    : weightSummary.avgKgPerWeek < 0
-                      ? "Avg. gain"
-                      : "Avg. change"
-                }
-                value={
-                  weightSummary.avgKgPerWeek !== 0
-                    ? `${Math.abs(weightSummary.avgKgPerWeek).toFixed(2)} kg/week`
-                    : "—"
-                }
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Log a weigh-in to start building your trend.
+            </p>
+          )}
+        </div>
 
-      <section className="flex flex-col gap-3">
-        <SectionHeader title="Weight" />
-        <Card>
-          <CardContent>
-            <WeightChart data={weightHistory} />
-          </CardContent>
-        </Card>
+        <WeightChart data={weightHistory} />
+
         <div className="flex items-center gap-2">
           <Input
             type="number"
@@ -247,6 +230,26 @@ export function ProgressScreen({
           </Button>
         </div>
         {weightMessage && <p className="text-sm text-destructive">{weightMessage}</p>}
+
+        {weightSummary && (
+          <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
+            <StatRow label="Lost" value={`${weightSummary.weightLostKg.toFixed(1)} kg`} />
+            <StatRow
+              label={
+                weightSummary.avgKgPerWeek > 0
+                  ? "Avg. loss"
+                  : weightSummary.avgKgPerWeek < 0
+                    ? "Avg. gain"
+                    : "Avg. change"
+              }
+              value={
+                weightSummary.avgKgPerWeek !== 0
+                  ? `${Math.abs(weightSummary.avgKgPerWeek).toFixed(2)} kg/week`
+                  : "—"
+              }
+            />
+          </div>
+        )}
       </section>
 
       <section className="flex flex-col gap-3">
@@ -264,7 +267,7 @@ export function ProgressScreen({
         </button>
 
         {measurements.some((m) => m.currentCm !== null) && (
-          <div className="grid grid-cols-3 gap-3 rounded-lg border border-border p-4">
+          <div className="grid grid-cols-3 gap-x-4 gap-y-4">
             {measurements
               .filter((m) => m.currentCm !== null)
               .map((m) => (

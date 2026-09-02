@@ -11,7 +11,7 @@ export async function WeeklySummaryTile() {
 
   return (
     <>
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-0.5 border-l-2 pl-3" style={{ borderColor: "var(--protein)" }}>
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Training
         </p>
@@ -19,7 +19,7 @@ export async function WeeklySummaryTile() {
           {summary.workoutsCompleted} / {summary.daysElapsed}
         </p>
       </div>
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-0.5 border-l-2 pl-3" style={{ borderColor: "var(--carbs)" }}>
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Meals</p>
         <p className="tabular-data text-lg font-semibold">
           {summary.mealLoggingDays} / {summary.daysElapsed}
