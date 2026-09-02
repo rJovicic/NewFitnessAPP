@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronDown, Play } from "lucide-react";
+import { Check, ChevronDown, Dumbbell, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { RestTimer } from "@/components/rest-timer";
 import { SectionHeader } from "@/components/fitness/section-header";
+import { cn } from "@/lib/utils";
 import {
   logWorkout,
   type TodaysWorkout,
@@ -17,6 +18,13 @@ interface Step {
   exerciseIndex: number;
   setNumber: number;
 }
+
+// Deterministic per-exercise accent — no muscle-group -> color mapping is
+// stored, so this cycles the existing semantic palette by list position
+// rather than fabricating new per-exercise metadata. Gives each exercise
+// module in the overview a distinct identity, Hevy-style, instead of a
+// uniform muted row.
+const EXERCISE_TONES = ["calories", "protein", "carbs", "fat", "water", "steps"] as const;
 
 function buildSteps(exercises: TodaysWorkout["exercises"]): Step[] {
   const steps: Step[] = [];
@@ -111,10 +119,29 @@ export function TrainScreen({
             <Progress value={(stepIndex + 1) / steps.length} tone="calories" />
           </div>
 
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col items-center gap-2.5">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Set {step.setNumber} of {exercise.rounds}
             </p>
+            <div className="flex items-center gap-1.5" aria-hidden="true">
+              {Array.from({ length: exercise.rounds }, (_, idx) => {
+                const setNum = idx + 1;
+                const isDone = setNum < step.setNumber;
+                const isCurrent = setNum === step.setNumber;
+                return (
+                  <span
+                    key={idx}
+                    className={cn(
+                      "size-2 rounded-full transition-colors",
+                      isDone ? "bg-fat" : isCurrent ? "bg-primary" : "bg-muted"
+                    )}
+                  />
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1">
             <h2 className="font-display text-3xl font-semibold text-balance">{exercise.name}</h2>
             <p className="text-base font-medium">{exercise.repsTarget}</p>
           </div>
@@ -220,50 +247,80 @@ export function TrainScreen({
         </div>
       ) : (
         <>
-          <div className="flex flex-col">
-            {workout.exercises.map((ex, i) => (
-              <div
-                key={ex.id}
-                className="flex items-start justify-between gap-4 border-t border-border py-4 first:border-t-0"
-              >
-                <div className="flex gap-3">
-                  <span className="tabular-data w-6 shrink-0 pt-0.5 text-xs font-medium text-muted-foreground">
-                    {String(i + 1).padStart(2, "0")}
+          <div className="flex flex-col pb-2">
+            {workout.exercises.map((ex, i) => {
+              const tone = EXERCISE_TONES[i % EXERCISE_TONES.length];
+              return (
+                <div
+                  key={ex.id}
+                  className="flex items-start gap-3 border-t border-border py-4 first:border-t-0"
+                >
+                  <span
+                    className="tabular-data mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold"
+                    style={{
+                      backgroundColor: `var(--${tone}-soft)`,
+                      color: `var(--${tone})`,
+                    }}
+                    aria-hidden="true"
+                  >
+                    {i + 1}
                   </span>
-                  <div>
-                    <p className="text-base font-medium">{ex.name}</p>
-                    <p className="text-xs text-muted-foreground">{ex.muscleGroup}</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-base font-medium">{ex.name}</p>
+                        <p className="text-xs text-muted-foreground">{ex.muscleGroup}</p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="tabular-data text-sm font-medium">{ex.repsTarget}</p>
+                        <p className="tabular-data text-xs text-muted-foreground">{ex.rounds} sets</p>
+                      </div>
+                    </div>
+                    <div className="mt-2.5 flex gap-1" aria-hidden="true">
+                      {Array.from({ length: ex.rounds }, (_, s) => (
+                        <span
+                          key={s}
+                          className="h-1 flex-1 rounded-full"
+                          style={{ backgroundColor: `var(--${tone}-soft)` }}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <div className="shrink-0 text-right">
-                  <p className="tabular-data text-sm font-medium">{ex.repsTarget}</p>
-                  <p className="tabular-data text-xs text-muted-foreground">{ex.rounds} sets</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
-          <Button size="lg" onClick={start}>
-            <Play className="size-4" /> Start workout
-          </Button>
+          <div className="sticky bottom-24 z-10 -mx-4 bg-gradient-to-t from-background via-background/95 to-transparent px-4 pt-6 pb-2">
+            <Button size="lg" className="w-full" onClick={start}>
+              <Play className="size-4" /> Start workout
+            </Button>
+          </div>
         </>
       )}
 
       {recentLogs.length > 0 && (
         <div className="flex flex-col gap-2">
           <SectionHeader title="Recent" />
-          {recentLogs.map((log) => (
-            <div
-              key={log.id}
-              className="flex items-center justify-between border-t border-border py-2.5 text-xs text-muted-foreground first:border-t-0"
-            >
-              <span>{log.focusName}</span>
-              <span className="tabular-data">
-                {log.durationSeconds ? `${Math.round(log.durationSeconds / 60)} min` : "—"} · Effort{" "}
-                {log.perceivedEffort ?? "—"}
-              </span>
-            </div>
-          ))}
+          <div className="flex flex-col">
+            {recentLogs.map((log) => (
+              <div
+                key={log.id}
+                className="flex items-center gap-3 border-t border-border py-3 first:border-t-0"
+              >
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                  <Dumbbell className="size-3.5" strokeWidth={1.75} />
+                </span>
+                <div className="flex flex-1 items-baseline justify-between gap-3">
+                  <span className="text-sm font-medium">{log.focusName}</span>
+                  <span className="tabular-data text-xs text-muted-foreground">
+                    {log.durationSeconds ? `${Math.round(log.durationSeconds / 60)} min` : "—"} ·
+                    Effort {log.perceivedEffort ?? "—"}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

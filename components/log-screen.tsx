@@ -1,11 +1,12 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Barcode, ChevronLeft, Plus, Search, Trash2 } from "lucide-react";
+import { Barcode, Check, ChevronLeft, Plus, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet } from "@/components/ui/sheet";
 import { AlertDialog } from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 import { GfBadge, type GlutenStatus } from "@/components/gf-badge";
 import { GfDisclaimer } from "@/components/gf-disclaimer";
 import { BarcodeScannerModal } from "@/components/barcode-scanner";
@@ -365,18 +366,34 @@ export function LogScreen({
         const entries = timelineForSlot(slot.type, planMeals, loggedMeals);
         const loggedEntries = entries.filter((e) => e.deletableId);
         const totals = sumMacros(loggedEntries);
+        // A slot with nothing left pending (everything in it is already
+        // logged) recedes into a plain divider row — the planned/emphasized
+        // treatment is reserved for what still needs action. This is the
+        // planned-vs-actual contrast a uniform tonal box on every slot was
+        // flattening away.
+        const isComplete = entries.length > 0 && loggedEntries.length === entries.length;
 
         return (
-          // Tonal containment (not a bordered/shadowed card) makes each
-          // meal read as one unit — the fix for meals visually blending
-          // into an undifferentiated list of rows.
-          <section key={slot.type} className="flex flex-col gap-2 rounded-lg bg-surface-sunken p-4">
+          <section
+            key={slot.type}
+            className={cn(
+              "flex flex-col gap-2",
+              isComplete
+                ? "border-t border-border py-4 first:border-t-0"
+                : "rounded-lg bg-surface-sunken p-4"
+            )}
+          >
             <div className="flex items-start justify-between gap-3">
-              <div className="flex flex-col gap-0.5">
-                <p className="tabular-data text-xs text-muted-foreground">{slot.time}</p>
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  {slot.label}
-                </p>
+              <div className="flex items-center gap-1.5">
+                <div className="flex flex-col gap-0.5">
+                  <p className="tabular-data text-xs text-muted-foreground">{slot.time}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {slot.label}
+                  </p>
+                </div>
+                {isComplete && (
+                  <Check className="size-3.5 text-fat" strokeWidth={2.5} aria-label="Logged" />
+                )}
               </div>
               {loggedEntries.length > 0 && (
                 <div className="text-right">

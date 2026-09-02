@@ -18,7 +18,14 @@ export function MacroBar({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline justify-between">
-        <span className="text-sm font-medium">{label}</span>
+        <span className="flex items-center gap-1.5 text-sm font-medium">
+          <span
+            className="size-1.5 shrink-0 rounded-full"
+            style={{ backgroundColor: `var(--${color})` }}
+            aria-hidden="true"
+          />
+          {label}
+        </span>
         <span className="tabular-data text-xs text-muted-foreground">
           {Math.round(current)}
           <span className="text-muted-foreground">

@@ -3,7 +3,6 @@ import { Camera, Smartphone } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/fitness/page-header";
 import { addonRegistry } from "@/lib/addon-registry";
@@ -11,6 +10,9 @@ import { getDashboardData } from "@/lib/dashboard-data";
 import { todayInAppTimezone } from "@/lib/timezone";
 import { updateFastingWindow } from "./actions";
 
+// Plain utility rows under a section label — no card wrapper. Settings is
+// the screen where "quiet, not another rounded module" matters most: every
+// row here is a boring, low-stakes preference, not a hero surface.
 function SettingsSection({
   label,
   children,
@@ -20,12 +22,8 @@ function SettingsSection({
 }) {
   return (
     <div className="flex flex-col gap-2">
-      <p className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </p>
-      <Card className="overflow-hidden">
-        <div className="flex flex-col divide-y divide-border">{children}</div>
-      </Card>
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      <div className="flex flex-col divide-y divide-border border-t border-border">{children}</div>
     </div>
   );
 }
@@ -52,7 +50,7 @@ export default async function SettingsPage() {
       <PageHeader title="Settings" />
       <div className="flex flex-col gap-6 px-4 py-4">
         <SettingsSection label="Account">
-          <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+          <div className="flex items-center justify-between gap-3 py-3.5">
             <div>
               <p className="text-sm font-medium">Account</p>
               <p className="text-xs text-muted-foreground">{user?.email}</p>
@@ -62,7 +60,7 @@ export default async function SettingsPage() {
         </SettingsSection>
 
         <SettingsSection label="Plan">
-          <div className="flex flex-col gap-3 px-4 py-3.5">
+          <div className="flex flex-col gap-3 py-3.5">
             <div>
               <p className="text-sm font-medium">Fasting window</p>
               <p className="text-xs text-muted-foreground">
@@ -98,7 +96,7 @@ export default async function SettingsPage() {
             </form>
           </div>
           {dashboardData && (
-            <div className="px-4 py-3.5">
+            <div className="py-3.5">
               <p className="text-sm font-medium">Nutrition targets</p>
               <p className="text-xs text-muted-foreground">
                 Recalculated live from your latest weigh-in — not editable directly.
@@ -115,12 +113,12 @@ export default async function SettingsPage() {
         <SettingsSection label="Data">
           <Link
             href="/progress"
-            className="flex min-h-14 items-center gap-3 px-4 py-3.5 hover:bg-muted"
+            className="-mx-1 flex min-h-14 items-center gap-3 rounded-md px-1 py-3.5 hover:bg-muted"
           >
             <Camera className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
             <p className="text-sm font-medium">Progress photos</p>
           </Link>
-          <div className="px-4 py-3.5">
+          <div className="py-3.5">
             <p className="text-sm font-medium">Health data</p>
             <p className="text-xs text-muted-foreground">
               Steps and sleep sync automatically once Health Auto Export is configured on your
@@ -130,7 +128,7 @@ export default async function SettingsPage() {
         </SettingsSection>
 
         <SettingsSection label="App">
-          <div className="flex items-center gap-3 px-4 py-3.5">
+          <div className="flex items-center gap-3 py-3.5">
             <Smartphone className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
             <div>
               <p className="text-sm font-medium">Install app</p>
@@ -143,7 +141,7 @@ export default async function SettingsPage() {
         </SettingsSection>
 
         <SettingsSection label="Add-ons">
-          <div className="flex flex-col gap-2 px-4 py-3.5">
+          <div className="flex flex-col gap-2 py-3.5">
             {addonRegistry.length === 0 ? (
               <p className="text-xs text-muted-foreground">
                 No add-ons yet. Approved extras get a line here — nothing to configure until
