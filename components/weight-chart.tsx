@@ -46,9 +46,12 @@ export function WeightChart({ data }: { data: WeightPoint[] }) {
 
   if (data.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        Log a weight entry to see your trend here.
-      </p>
+      <div className="flex flex-col gap-1 py-4">
+        <p className="text-label">Weight trend</p>
+        <p className="text-sm text-muted-foreground">
+          Not enough data yet. Log 2–3 weigh-ins to reveal your trend.
+        </p>
+      </div>
     );
   }
 
@@ -58,16 +61,14 @@ export function WeightChart({ data }: { data: WeightPoint[] }) {
   if (data.length === 1) {
     const [point] = data;
     return (
-      <div className="flex flex-col items-center gap-1 py-6 text-center">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Your first weigh-in
-        </p>
+      <div className="flex flex-col gap-1 py-4">
+        <p className="text-label">Your first weigh-in</p>
         <p className="font-display text-4xl font-semibold tracking-tight">
           {point.weightKg.toFixed(1)}
           <span className="text-lg font-normal text-muted-foreground"> kg</span>
         </p>
         <p className="pt-1 text-sm text-muted-foreground">
-          Keep logging your weight to reveal your trend.
+          Not enough data yet. Log 2–3 more weigh-ins to reveal your trend.
         </p>
       </div>
     );

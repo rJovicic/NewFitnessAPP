@@ -362,99 +362,109 @@ export function LogScreen({
 
       {listError && <p className="text-sm text-destructive">{listError}</p>}
 
-      {MEAL_SLOTS.map((slot) => {
-        const entries = timelineForSlot(slot.type, planMeals, loggedMeals);
-        const loggedEntries = entries.filter((e) => e.deletableId);
-        const totals = sumMacros(loggedEntries);
-        // A slot with nothing left pending (everything in it is already
-        // logged) recedes into a plain divider row — the planned/emphasized
-        // treatment is reserved for what still needs action. This is the
-        // planned-vs-actual contrast a uniform tonal box on every slot was
-        // flattening away.
-        const isComplete = entries.length > 0 && loggedEntries.length === entries.length;
+      {/* A chronological journal, not a stack of meal cards — time leads
+          each row (a real timeline column, not a label), the meal name
+          sits directly on the page, and a thin border-t rule is the only
+          separator between entries. See the art-direction reset note atop
+          globals.css. */}
+      <div className="flex flex-col">
+        {MEAL_SLOTS.map((slot) => {
+          const entries = timelineForSlot(slot.type, planMeals, loggedMeals);
+          const loggedEntries = entries.filter((e) => e.deletableId);
+          const totals = sumMacros(loggedEntries);
+          // A slot with nothing left pending (everything in it is already
+          // logged) shows a quiet checkmark instead of emphasis — the
+          // planned/actual contrast now lives in text weight, not in a box.
+          const isComplete = entries.length > 0 && loggedEntries.length === entries.length;
 
-        return (
-          <section
-            key={slot.type}
-            className={cn(
-              "flex flex-col gap-2",
-              isComplete
-                ? "border-t border-border py-4 first:border-t-0"
-                : "rounded-lg bg-surface-sunken p-4"
-            )}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-1.5">
-                <div className="flex flex-col gap-0.5">
-                  <p className="tabular-data text-xs text-muted-foreground">{slot.time}</p>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {slot.label}
-                  </p>
-                </div>
-                {isComplete && (
-                  <Check className="size-3.5 text-fat" strokeWidth={2.5} aria-label="Logged" />
-                )}
-              </div>
-              {loggedEntries.length > 0 && (
-                <div className="text-right">
-                  <p className="tabular-data text-sm font-semibold">{totals.kcal} kcal</p>
-                  <p className="tabular-data text-xs text-muted-foreground">
-                    {loggedEntries.length} food{loggedEntries.length !== 1 ? "s" : ""} · P
-                    {totals.protein} C{totals.carbs} F{totals.fat}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {entries.length === 0 ? (
-              <p className="py-1 text-xs text-muted-foreground">Nothing planned or logged</p>
-            ) : (
-              <div className="flex flex-col divide-y divide-border">
-                {entries.map((entry) => (
-                  <div key={entry.key} className="flex items-center justify-between gap-3 py-2.5">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{entry.name}</p>
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span className="tabular-data text-xs text-muted-foreground">
-                          {entry.detail} · {entry.kcal} kcal
-                        </span>
-                        {entry.glutenStatus && <GfBadge status={entry.glutenStatus} />}
-                      </div>
-                    </div>
-                    {entry.planMealId ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={isPending && busyPlanId === entry.planMealId}
-                        onClick={() => handleLogPlanMeal(entry.planMealId!)}
-                      >
-                        Log
-                      </Button>
-                    ) : (
-                      <button
-                        type="button"
-                        aria-label={`Remove ${entry.name}`}
-                        onClick={() => requestDelete(entry.deletableId!, entry.name)}
-                        className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-muted hover:text-destructive focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                      >
-                        <Trash2 className="size-4" />
-                      </button>
+          return (
+            <section
+              key={slot.type}
+              className="flex gap-4 border-t border-border py-5 first:border-t-0"
+            >
+              <p className="tabular-data w-11 shrink-0 pt-0.5 text-xs text-muted-foreground">
+                {slot.time}
+              </p>
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-label">{slot.label}</p>
+                    {isComplete && (
+                      <Check className="size-3.5 text-fat" strokeWidth={2.5} aria-label="Logged" />
                     )}
                   </div>
-                ))}
-              </div>
-            )}
+                  {loggedEntries.length > 0 && (
+                    <div className="text-right">
+                      <p className="tabular-data text-sm font-semibold">{totals.kcal} kcal</p>
+                      <p className="tabular-data text-xs text-muted-foreground">
+                        {loggedEntries.length} food{loggedEntries.length !== 1 ? "s" : ""} · P
+                        {totals.protein} C{totals.carbs} F{totals.fat}
+                      </p>
+                    </div>
+                  )}
+                </div>
 
-            <button
-              type="button"
-              onClick={() => openAddSheet(slot.type)}
-              className="flex min-h-9 w-fit items-center gap-1 rounded-md text-xs font-medium text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            >
-              <Plus className="size-3.5" strokeWidth={2.5} /> Add food
-            </button>
-          </section>
-        );
-      })}
+                {entries.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">Nothing planned or logged</p>
+                ) : (
+                  <div className="flex flex-col divide-y divide-border">
+                    {entries.map((entry) => (
+                      <div
+                        key={entry.key}
+                        className="flex items-center justify-between gap-3 py-2.5 first:pt-0"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={cn(
+                              "truncate text-sm font-medium",
+                              entry.planMealId && "text-muted-foreground"
+                            )}
+                          >
+                            {entry.name}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <span className="tabular-data text-xs text-muted-foreground">
+                              {entry.detail} · {entry.kcal} kcal
+                            </span>
+                            {entry.glutenStatus && <GfBadge status={entry.glutenStatus} />}
+                          </div>
+                        </div>
+                        {entry.planMealId ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isPending && busyPlanId === entry.planMealId}
+                            onClick={() => handleLogPlanMeal(entry.planMealId!)}
+                          >
+                            Log
+                          </Button>
+                        ) : (
+                          <button
+                            type="button"
+                            aria-label={`Remove ${entry.name}`}
+                            onClick={() => requestDelete(entry.deletableId!, entry.name)}
+                            className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground outline-none hover:bg-muted hover:text-destructive focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => openAddSheet(slot.type)}
+                  className="flex min-h-9 w-fit items-center gap-1 rounded-md text-xs font-medium text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                >
+                  <Plus className="size-3.5" strokeWidth={2.5} /> Add food
+                </button>
+              </div>
+            </section>
+          );
+        })}
+      </div>
 
       <GfDisclaimer />
 

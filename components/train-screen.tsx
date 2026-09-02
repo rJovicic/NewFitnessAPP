@@ -113,17 +113,18 @@ export function TrainScreen({
       <div className="flex min-h-[calc(100svh-9rem)] flex-col justify-between gap-8 px-4 py-6">
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="flex w-full flex-col gap-1.5">
-            <p className="tabular-data text-xs font-medium text-muted-foreground">
-              Exercise {step.exerciseIndex + 1} of {workout.exercises.length}
+            <p className="tabular-data text-xs font-medium tracking-wide text-muted-foreground">
+              EXERCISE {String(step.exerciseIndex + 1).padStart(2, "0")} /{" "}
+              {String(workout.exercises.length).padStart(2, "0")}
             </p>
             <Progress value={(stepIndex + 1) / steps.length} tone="calories" />
           </div>
 
           <div className="flex flex-col items-center gap-2.5">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-label">
               Set {step.setNumber} of {exercise.rounds}
             </p>
-            <div className="flex items-center gap-1.5" aria-hidden="true">
+            <div className="flex items-center gap-2" aria-hidden="true">
               {Array.from({ length: exercise.rounds }, (_, idx) => {
                 const setNum = idx + 1;
                 const isDone = setNum < step.setNumber;
@@ -132,10 +133,16 @@ export function TrainScreen({
                   <span
                     key={idx}
                     className={cn(
-                      "size-2 rounded-full transition-colors",
-                      isDone ? "bg-fat" : isCurrent ? "bg-primary" : "bg-muted"
+                      "tabular-data flex size-7 items-center justify-center rounded-full border text-xs font-semibold transition-colors",
+                      isCurrent
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : isDone
+                          ? "border-fat/40 bg-fat-soft text-fat"
+                          : "border-border text-muted-foreground"
                     )}
-                  />
+                  >
+                    {String(setNum).padStart(2, "0")}
+                  </span>
                 );
               })}
             </div>
@@ -276,12 +283,12 @@ export function TrainScreen({
                         <p className="tabular-data text-xs text-muted-foreground">{ex.rounds} sets</p>
                       </div>
                     </div>
-                    <div className="mt-2.5 flex gap-1" aria-hidden="true">
+                    <div className="mt-2.5 flex gap-1.5" aria-hidden="true">
                       {Array.from({ length: ex.rounds }, (_, s) => (
                         <span
                           key={s}
-                          className="h-1 flex-1 rounded-full"
-                          style={{ backgroundColor: `var(--${tone}-soft)` }}
+                          className="size-1.5 rounded-full"
+                          style={{ backgroundColor: `var(--${tone})` }}
                         />
                       ))}
                     </div>

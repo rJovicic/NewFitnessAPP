@@ -139,9 +139,9 @@ export function ProgressScreen({
   };
 
   return (
-    <div className="flex flex-col gap-6 px-4 py-4">
+    <div className="flex flex-col">
       {visibleSuggestions.length > 0 && (
-        <section className="flex flex-col gap-3">
+        <section className="flex flex-col gap-3 px-4 pt-4">
           {visibleSuggestions.map((s) => (
             <Card key={s.type} className="border-carbs/40 bg-carbs-soft">
               <CardContent className="flex flex-col gap-2">
@@ -175,15 +175,13 @@ export function ProgressScreen({
         </section>
       )}
 
-      {/* One continuous data-viz-first module — number, trend and stats
-          flow together rather than sitting in two stacked bordered cards
-          (a weight hero card + a separate chart card), per the "not two
-          large empty cards" direction. */}
-      <section className="flex flex-col gap-5 rounded-lg bg-surface-sunken p-4">
+      {/* Open composition — number, trend and stats flow together on the
+          page rather than sitting inside a card or a tonal box. Section
+          rhythm comes from the border-t rule + padding below, not a
+          container. See the art-direction reset note atop globals.css. */}
+      <section className="flex flex-col gap-5 px-4 pt-4 pb-8">
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Your progress
-          </p>
+          <p className="text-label">Your progress</p>
           {weightSummary?.currentWeightKg != null ? (
             <>
               <div className="flex flex-col gap-1">
@@ -197,12 +195,17 @@ export function ProgressScreen({
                     : "Goal reached"}
                 </span>
               </div>
-              <div className="flex flex-col gap-1.5 pt-1">
-                <div className="flex items-baseline justify-between text-xs text-muted-foreground">
-                  <span>Goal {weightSummary.goalWeightKg.toFixed(1)} kg</span>
-                  <span className="tabular-data">{weightSummary.percentToGoal}% toward goal</span>
+              <div className="flex flex-col gap-1.5 pt-2">
+                <div className="flex items-baseline justify-between border-t border-border py-2">
+                  <span className="text-label">Goal</span>
+                  <span className="tabular-data text-sm font-medium">
+                    {weightSummary.goalWeightKg.toFixed(1)} kg
+                  </span>
                 </div>
                 <Progress value={weightSummary.percentToGoal / 100} tone="calories" trackClassName="h-1" />
+                <p className="tabular-data text-right text-xs text-muted-foreground">
+                  {weightSummary.percentToGoal}% toward goal
+                </p>
               </div>
             </>
           ) : (
@@ -252,7 +255,7 @@ export function ProgressScreen({
         )}
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-3 border-t border-border px-4 pt-6 pb-8">
         <button
           onClick={() => setMeasurementsOpen((v) => !v)}
           aria-expanded={measurementsOpen}
@@ -349,7 +352,7 @@ export function ProgressScreen({
         )}
       </section>
 
-      <section className="flex flex-col gap-3">
+      <section className="flex flex-col gap-3 border-t border-border px-4 pt-6 pb-8">
         <SectionHeader title="Progress photos" />
         {photos.length === 0 ? (
           <EmptyState

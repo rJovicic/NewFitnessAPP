@@ -13,7 +13,7 @@ export function StatRow({
 }) {
   return (
     <div className="flex flex-col gap-0.5">
-      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-label">{label}</p>
       <p className="tabular-data text-lg font-semibold">{value}</p>
       {delta && (
         <p
